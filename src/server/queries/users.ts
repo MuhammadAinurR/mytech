@@ -70,3 +70,17 @@ export async function updateUserProfile(
     .returning(publicColumns)
   return user ?? null
 }
+
+/** Auth only: the stored hash for re-verifying the current password. */
+export async function getPasswordHash(userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+  return row?.passwordHash ?? null
+}
+
+export async function setPasswordHash(userId: string, passwordHash: string): Promise<void> {
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId))
+}
