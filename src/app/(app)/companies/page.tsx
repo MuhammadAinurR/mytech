@@ -1,0 +1,42 @@
+import { Building2 } from 'lucide-react'
+import type { Metadata } from 'next'
+
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/ui/page-header'
+import { CompaniesTable } from '@/features/companies/components/companies-table'
+import {
+  AddCompanyButton,
+  CompanyDialogProvider,
+} from '@/features/companies/components/company-dialog'
+import { requireUser } from '@/server/auth/session'
+import { listCompanies } from '@/server/queries/companies'
+
+export const metadata: Metadata = { title: 'Companies' }
+
+export default async function CompaniesPage() {
+  const user = await requireUser()
+  const companies = await listCompanies(user.id)
+
+  return (
+    <CompanyDialogProvider companies={companies} defaultCurrency={user.defaultCurrency}>
+      <PageHeader
+        title="Companies"
+        description="The businesses you invoice from, each with its own numbering."
+        actions={<AddCompanyButton />}
+      />
+      {companies.length > 0 ? (
+        <div className="border-t border-border pt-2 md:border-t-0">
+          <CompaniesTable companies={companies} />
+        </div>
+      ) : (
+        <EmptyState
+          className="border-t border-border"
+          icon={<Building2 />}
+          title="No companies yet"
+          description="Add the business you invoice from. Its details and numbering go on every invoice."
+          action={<AddCompanyButton variant="secondary" />}
+        />
+      )}
+    </CompanyDialogProvider>
+  )
+}
