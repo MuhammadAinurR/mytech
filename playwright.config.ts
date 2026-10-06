@@ -32,10 +32,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'e2e',
       testIgnore: /visual\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
     },
     {
       // Screenshot review for ui/* branches. Run explicitly with --project=visual.

@@ -3,11 +3,15 @@ import { expect, test } from '@playwright/test'
 
 import { PASSWORD, signUp } from './helpers'
 
+// These tests exercise sign-up and sign-in themselves, so they start signed out.
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test('sign up, sign out, and sign back in', async ({ page }) => {
   const { email } = await signUp(page)
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.getByRole('button', { name: /Rofiq Example/ }).click()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login$/)
 
   // The old session is gone: protected pages bounce back to login.
