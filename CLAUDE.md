@@ -30,14 +30,15 @@ using an API you are not sure about.
   git switch main && git pull
   git switch -c <branch>
   # implement
-  npm run typecheck && npm run lint && npm test && npm run build
+  npm run verify   # typecheck + lint + test + build; must exit 0
   git commit
   git switch main && git merge --no-ff <branch> && git push origin main
   git branch -d <branch>
   ```
 
 - Merge only when typecheck, lint, tests, and build all pass. Fix failures on the
-  same branch.
+  same branch. Gate on the exit code of `npm run verify`; never pipe it through a
+  filter that hides a failing status.
 - Never force-push, never rewrite history on `main`, never use `--no-verify`.
 - After each merge, print one line: branch, what changed, test status.
 

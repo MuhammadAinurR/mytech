@@ -63,7 +63,8 @@ export const recurringRules = pgTable(
     check('recurring_rules_day_range', sql`${table.dayOfMonth} between 1 and 31`),
     check(
       'recurring_rules_month_matches_frequency',
-      sql`(${table.frequency} = 'yearly' and ${table.monthOfYear} between 1 and 12) or (${table.frequency} = 'monthly' and ${table.monthOfYear} is null)`,
+      // Explicit IS NOT NULL: a NULL comparison would make the CHECK pass silently.
+      sql`(${table.frequency} = 'yearly' and ${table.monthOfYear} is not null and ${table.monthOfYear} between 1 and 12) or (${table.frequency} = 'monthly' and ${table.monthOfYear} is null)`,
     ),
     check(
       'recurring_rules_ends_after_start',

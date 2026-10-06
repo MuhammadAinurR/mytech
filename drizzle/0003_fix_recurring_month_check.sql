@@ -1,0 +1,2 @@
+ALTER TABLE "recurring_rules" DROP CONSTRAINT "recurring_rules_month_matches_frequency";--> statement-breakpoint
+ALTER TABLE "recurring_rules" ADD CONSTRAINT "recurring_rules_month_matches_frequency" CHECK (("recurring_rules"."frequency" = 'yearly' and "recurring_rules"."month_of_year" is not null and "recurring_rules"."month_of_year" between 1 and 12) or ("recurring_rules"."frequency" = 'monthly' and "recurring_rules"."month_of_year" is null));
