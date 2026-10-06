@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test('pages are served with a nonce-based CSP and security headers', async ({ request }) => {
   const response = await request.get('/login')
   expect(response.status()).toBe(200)
