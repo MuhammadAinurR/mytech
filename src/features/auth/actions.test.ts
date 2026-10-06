@@ -1,34 +1,9 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { closeDb } from '@/server/db'
 import { closeRedis } from '@/server/redis'
 import { createTestUser, TEST_PASSWORD, uniqueIp } from '@/server/testing/factories'
-
-// Next.js request APIs are replaced with in-memory fakes so actions can run in Node.
-const cookieJar = new Map<string, { value: string; options?: Record<string, unknown> }>()
-let ip = '10.0.0.1'
-
-vi.mock('next/headers', () => ({
-  cookies: async () => ({
-    get: (name: string) =>
-      cookieJar.has(name) ? { name, value: cookieJar.get(name)!.value } : undefined,
-    set: (name: string, value: string, options?: Record<string, unknown>) =>
-      cookieJar.set(name, { value, options }),
-    delete: (name: string) => cookieJar.delete(name),
-  }),
-  headers: async () => new Headers({ 'x-forwarded-for': ip, 'user-agent': 'vitest' }),
-}))
-
-class RedirectError extends Error {
-  constructor(public location: string) {
-    super(`NEXT_REDIRECT:${location}`)
-  }
-}
-vi.mock('next/navigation', () => ({
-  redirect: (location: string) => {
-    throw new RedirectError(location)
-  },
-}))
+import { request, resetRequest } from '@/server/testing/next-request'
 
 const { loginAction, logoutAction, signupAction } = await import('./actions')
 const { getCurrentUser } = await import('@/server/auth/session')
@@ -37,10 +12,8 @@ afterAll(async () => {
   await Promise.all([closeDb(), closeRedis()])
 })
 
-beforeEach(() => {
-  cookieJar.clear()
-  ip = uniqueIp()
-})
+beforeEach(() => resetRequest(uniqueIp()))
+const cookieJar = request.cookies
 
 function form(values: Record<string, string>) {
   const data = new FormData()
