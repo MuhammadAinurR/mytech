@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addDays,
   daysInMonth,
+  describeDaysUntil,
   diffInDays,
   formatDateOnly,
   isDateOnly,
@@ -65,5 +66,15 @@ describe('isValidTimeZone', () => {
   it('validates IANA names', () => {
     expect(isValidTimeZone('Asia/Jakarta')).toBe(true)
     expect(isValidTimeZone('Mars/Olympus')).toBe(false)
+  })
+})
+
+describe('describeDaysUntil', () => {
+  it('uses words for the nearest days', () => {
+    expect(describeDaysUntil(0)).toBe('Today')
+    expect(describeDaysUntil(1)).toBe('Tomorrow')
+    expect(describeDaysUntil(-1)).toBe('Yesterday')
+    expect(describeDaysUntil(12)).toBe('in 12 days')
+    expect(describeDaysUntil(-3)).toBe('3 days ago')
   })
 })

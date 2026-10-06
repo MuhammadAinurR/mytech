@@ -100,3 +100,11 @@ export function formatDateTime(
     minute: '2-digit',
   }).format(instant)
 }
+
+/** "Today", "Tomorrow", "in 12 days", "3 days ago". */
+export function describeDaysUntil(days: number): string {
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Tomorrow'
+  if (days === -1) return 'Yesterday'
+  return days > 0 ? `in ${days} days` : `${-days} days ago`
+}

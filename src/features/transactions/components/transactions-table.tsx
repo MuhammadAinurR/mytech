@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Ellipsis, Pencil, Trash2 } from 'lucide-react'
+import { Copy, Ellipsis, Pencil, Repeat, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Money } from '@/components/money'
@@ -24,6 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from '@/components/ui/toaster'
+import { Tooltip } from '@/components/ui/tooltip'
 import { formatDateOnly } from '@/lib/dates'
 import type { TransactionItem } from '@/server/queries/transactions'
 
@@ -54,7 +55,7 @@ export function TransactionsTable({
           <TableHeader>
             <TableRow>
               <TableHead className="w-16 sm:w-24">Date</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead className="w-full lg:w-1/3">Category</TableHead>
               <TableHead className="hidden lg:table-cell">Note</TableHead>
               <TableHead numeric>Amount</TableHead>
               <TableHead className="hidden w-14 sm:table-cell">
@@ -82,15 +83,26 @@ export function TransactionsTable({
                   })}
                 </TableCell>
                 <TableCell className="max-w-0 py-2.5">
-                  <button
-                    type="button"
-                    data-row-link
-                    tabIndex={-1}
-                    onClick={() => openEdit(item)}
-                    className="block max-w-full cursor-pointer truncate text-left font-medium"
-                  >
-                    {item.category}
-                  </button>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      data-row-link
+                      tabIndex={-1}
+                      onClick={() => openEdit(item)}
+                      className="block min-w-0 cursor-pointer truncate text-left font-medium"
+                    >
+                      {item.category}
+                    </button>
+                    {item.recurringRuleId ? (
+                      <Tooltip content="Created by a recurring rule">
+                        <Repeat
+                          aria-label="Recurring"
+                          className="size-3.5 shrink-0 text-subtle"
+                          tabIndex={-1}
+                        />
+                      </Tooltip>
+                    ) : null}
+                  </span>
                   {item.note ? (
                     <p className="truncate text-xs text-muted lg:hidden">{item.note}</p>
                   ) : null}
@@ -98,7 +110,7 @@ export function TransactionsTable({
                 <TableCell className="hidden max-w-0 text-muted lg:table-cell">
                   <span className="block truncate">{item.note}</span>
                 </TableCell>
-                <TableCell numeric className="w-36">
+                <TableCell numeric className="sm:w-36">
                   <Money
                     amountMinor={item.type === 'income' ? item.amountMinor : -item.amountMinor}
                     currency={item.currency}

@@ -23,6 +23,7 @@ const listColumns = {
   category: transactions.category,
   occurredOn: transactions.occurredOn,
   note: transactions.note,
+  recurringRuleId: transactions.recurringRuleId,
 }
 
 export type TransactionItem = {
@@ -33,6 +34,8 @@ export type TransactionItem = {
   category: string
   occurredOn: string
   note: string | null
+  /** Set when the worker created this entry from a recurring rule. */
+  recurringRuleId: string | null
 }
 
 function escapeLike(value: string) {
