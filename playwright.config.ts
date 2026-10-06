@@ -56,6 +56,8 @@ export default defineConfig({
         env: {
           DATABASE_URL: testEnv.DATABASE_URL ?? '',
           REDIS_URL: testEnv.REDIS_URL ?? '',
+          ENCRYPTION_KEYS: testEnv.ENCRYPTION_KEYS ?? '',
+          ENCRYPTION_KEY_VERSION: testEnv.ENCRYPTION_KEY_VERSION ?? '',
           APP_URL: `http://localhost:${PORT}`,
           LOG_LEVEL: 'warn',
         },
