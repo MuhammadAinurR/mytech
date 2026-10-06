@@ -91,6 +91,8 @@ export async function revealSecretAction(
       userAgent: meta.userAgent,
     })
     if (secret === null) return err('not_found')
+    // Refresh "last viewed" in the list; the revealed value lives only in client state.
+    revalidatePath('/credentials')
     logger.info(
       { userId: user.id, credentialId: credentialId.data, purpose: reason.data },
       'secret revealed',

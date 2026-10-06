@@ -4,6 +4,7 @@ import {
   addDays,
   daysInMonth,
   describeDaysUntil,
+  formatRelativeTime,
   diffInDays,
   formatDateOnly,
   isDateOnly,
@@ -76,5 +77,18 @@ describe('describeDaysUntil', () => {
     expect(describeDaysUntil(-1)).toBe('Yesterday')
     expect(describeDaysUntil(12)).toBe('in 12 days')
     expect(describeDaysUntil(-3)).toBe('3 days ago')
+  })
+})
+
+describe('formatRelativeTime', () => {
+  const now = new Date('2026-10-07T12:00:00Z')
+  const ago = (ms: number) => new Date(now.getTime() - ms)
+  it('reads naturally from seconds to weeks', () => {
+    expect(formatRelativeTime(ago(10_000), now)).toBe('just now')
+    expect(formatRelativeTime(ago(5 * 60_000), now)).toBe('5 min ago')
+    expect(formatRelativeTime(ago(3 * 3_600_000), now)).toBe('3 h ago')
+    expect(formatRelativeTime(ago(26 * 3_600_000), now)).toBe('yesterday')
+    expect(formatRelativeTime(ago(5 * 86_400_000), now)).toBe('5 days ago')
+    expect(formatRelativeTime(ago(90 * 86_400_000), now)).toBe('Jul 9, 2026')
   })
 })
