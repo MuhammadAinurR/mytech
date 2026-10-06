@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
+    "verify": "npm run typecheck && npm run lint && npm test && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
