@@ -79,6 +79,11 @@ for (const path of paths) {
       for (const viewport of viewports) {
         test(`screenshot ${viewport.name} ${theme}`, async ({ browser }) => {
           const page = await open(browser, path, { ...viewport, theme })
+          // On desktop the content panel is the scroll container; let it grow so
+          // the full-page capture includes everything, not just the viewport.
+          await page.addStyleTag({
+            content: '#main { height: auto !important; overflow: visible !important; }',
+          })
           await page.screenshot({
             path: `artifacts/screenshots/${slug(path)}-${viewport.name}-${theme}.png`,
             fullPage: true,

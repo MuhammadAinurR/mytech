@@ -79,6 +79,13 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-scrim: var(--scrim);
+  /* Documents (invoice preview, print, PDF) are always paper: light in both themes. */
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -136,6 +143,14 @@
   --danger-soft: oklch(0.52 0.18 27 / 0.08);
 
   --scrim: oklch(0.2 0.01 260 / 0.28);
+
+  /* Paper: not redefined for dark mode on purpose. */
+  --paper: oklch(0.995 0.001 260);
+  --ink: oklch(0.21 0.006 260);
+  --ink-muted: oklch(0.45 0.008 260);
+  --ink-subtle: oklch(0.53 0.008 260);
+  --rule: oklch(0.9 0.003 260);
+  --rule-strong: oklch(0.8 0.004 260);
 
   --elevation-popover:
     0 0 0 1px oklch(0.2 0.01 260 / 0.06), 0 2px 4px -1px oklch(0.2 0.01 260 / 0.05),
@@ -318,5 +333,33 @@
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  html,
+  body {
+    /* The page canvas (including @page margins) follows color-scheme. */
+    color-scheme: light !important;
+    background: var(--paper) !important;
+    color: var(--ink);
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-sheet {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
   }
 }
