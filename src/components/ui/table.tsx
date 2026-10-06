@@ -20,7 +20,11 @@ export function Table({ className, ...props }: ComponentProps<'table'>) {
 }
 
 export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
-  return <thead className={cn('[&_th]:sticky [&_th]:top-(--sticky-top)', className)} {...props} />
+  // Sticky only from md up: below that the table scrolls horizontally inside its
+  // own wrapper, where a sticky offset would push the header over the first row.
+  return (
+    <thead className={cn('md:[&_th]:sticky md:[&_th]:top-(--sticky-top)', className)} {...props} />
+  )
 }
 
 export function TableBody(props: ComponentProps<'tbody'>) {
