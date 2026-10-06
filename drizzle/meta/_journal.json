@@ -29,6 +29,13 @@
       "when": 1791327990083,
       "tag": "0003_fix_recurring_month_check",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791328816014,
+      "tag": "0004_credentials",
+      "breakpoints": true
     }
   ]
 }
