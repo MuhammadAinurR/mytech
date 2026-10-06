@@ -36,6 +36,13 @@
       "when": 1791328816014,
       "tag": "0004_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791329462259,
+      "tag": "0005_companies_invoices",
+      "breakpoints": true
     }
   ]
 }
