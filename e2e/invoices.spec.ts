@@ -58,6 +58,14 @@ test('create, number, send, print, and pay an invoice', async ({ page }) => {
   await page.emulateMedia({ media: 'screen' })
 
   await page.goto(invoiceUrl)
+  const download = page.waitForEvent('download')
+  await page.getByRole('link', { name: 'PDF' }).click()
+  const file = await download
+  expect(file.suggestedFilename()).toBe(`${prefix}0001.pdf`)
+  const pdfPath = await file.path()
+  const { readFileSync } = await import('node:fs')
+  expect(readFileSync(pdfPath).subarray(0, 5).toString()).toBe('%PDF-')
+
   await page.getByRole('button', { name: 'Mark as paid' }).click()
   await expect(page.getByText('Marked as paid')).toBeVisible()
   await expect(page.getByRole('article', { name: `Invoice ${prefix}0001` })).toContainText(
