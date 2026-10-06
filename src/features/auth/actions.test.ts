@@ -1,0 +1,125 @@
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { closeDb } from '@/server/db'
+import { closeRedis } from '@/server/redis'
+import { createTestUser, TEST_PASSWORD, uniqueIp } from '@/server/testing/factories'
+
+// Next.js request APIs are replaced with in-memory fakes so actions can run in Node.
+const cookieJar = new Map<string, { value: string; options?: Record<string, unknown> }>()
+let ip = '10.0.0.1'
+
+vi.mock('next/headers', () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      cookieJar.has(name) ? { name, value: cookieJar.get(name)!.value } : undefined,
+    set: (name: string, value: string, options?: Record<string, unknown>) =>
+      cookieJar.set(name, { value, options }),
+    delete: (name: string) => cookieJar.delete(name),
+  }),
+  headers: async () => new Headers({ 'x-forwarded-for': ip, 'user-agent': 'vitest' }),
+}))
+
+class RedirectError extends Error {
+  constructor(public location: string) {
+    super(`NEXT_REDIRECT:${location}`)
+  }
+}
+vi.mock('next/navigation', () => ({
+  redirect: (location: string) => {
+    throw new RedirectError(location)
+  },
+}))
+
+const { loginAction, logoutAction, signupAction } = await import('./actions')
+const { getCurrentUser } = await import('@/server/auth/session')
+
+afterAll(async () => {
+  await Promise.all([closeDb(), closeRedis()])
+})
+
+beforeEach(() => {
+  cookieJar.clear()
+  ip = uniqueIp()
+})
+
+function form(values: Record<string, string>) {
+  const data = new FormData()
+  for (const [key, value] of Object.entries(values)) data.set(key, value)
+  return data
+}
+
+describe('loginAction', () => {
+  it('returns field errors without touching the session for invalid input', async () => {
+    const state = await loginAction(undefined, form({ email: 'not-an-email', password: '' }))
+    expect(state?.fieldErrors?.email?.[0]).toMatch(/valid email/)
+    expect(state?.fieldErrors?.password?.[0]).toMatch(/password/)
+    expect(cookieJar.size).toBe(0)
+  })
+
+  it('sets an httpOnly SameSite cookie and redirects to a safe destination', async () => {
+    const user = await createTestUser()
+    await expect(
+      loginAction(
+        undefined,
+        form({ email: user.email, password: TEST_PASSWORD, next: '//evil.example' }),
+      ),
+    ).rejects.toMatchObject({ location: '/dashboard' })
+
+    const [[, cookie]] = [...cookieJar.entries()] as [
+      [string, { value: string; options: Record<string, unknown> }],
+    ]
+    expect(cookie.options).toMatchObject({ httpOnly: true, sameSite: 'lax', path: '/' })
+    await expect(getCurrentUser()).resolves.toMatchObject({ id: user.id })
+  })
+
+  it('uses one generic message for wrong credentials', async () => {
+    const user = await createTestUser()
+    const state = await loginAction(
+      undefined,
+      form({ email: user.email, password: 'wrong password' }),
+    )
+    expect(state?.error).toBe('That email and password don’t match.')
+    expect(state?.values?.email).toBe(user.email)
+  })
+})
+
+describe('signupAction', () => {
+  it('creates the account, signs in, and lands on the dashboard', async () => {
+    const email = `new-${crypto.randomUUID()}@example.test`
+    await expect(
+      signupAction(
+        undefined,
+        form({ name: 'Rofiq', email, password: 'long enough password', timezone: 'Asia/Jakarta' }),
+      ),
+    ).rejects.toMatchObject({ location: '/dashboard' })
+    await expect(getCurrentUser()).resolves.toMatchObject({ email, timezone: 'Asia/Jakarta' })
+  })
+
+  it('reports a taken email on the email field', async () => {
+    const user = await createTestUser()
+    const state = await signupAction(
+      undefined,
+      form({
+        name: 'Someone',
+        email: user.email,
+        password: 'long enough password',
+        timezone: 'UTC',
+      }),
+    )
+    expect(state?.fieldErrors?.email).toEqual(['An account with this email already exists.'])
+  })
+})
+
+describe('logoutAction', () => {
+  it('ends the session and clears the cookie', async () => {
+    const user = await createTestUser()
+    await loginAction(undefined, form({ email: user.email, password: TEST_PASSWORD })).catch(
+      () => {},
+    )
+    const token = [...cookieJar.values()][0]!.value
+    await expect(logoutAction()).rejects.toMatchObject({ location: '/login' })
+    expect(cookieJar.size).toBe(0)
+    const { validateSessionToken } = await import('@/server/auth/session-store')
+    await expect(validateSessionToken(token)).resolves.toBeNull()
+  })
+})
