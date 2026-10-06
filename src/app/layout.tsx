@@ -1,5 +1,12 @@
-import type { Metadata } from 'next'
+import { GeistMono } from 'geist/font/mono'
+import { GeistSans } from 'geist/font/sans'
+import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
+
+import { ThemeProvider } from '@/components/theme/theme-provider'
+import { Toaster } from '@/components/ui/toaster'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 import './globals.css'
 
@@ -8,14 +15,26 @@ export const metadata: Metadata = {
   description: 'Personal and business operations in one place.',
 }
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'oklch(0.975 0.002 260)' },
+    { media: '(prefers-color-scheme: dark)', color: 'oklch(0.155 0.004 260)' },
+  ],
+}
+
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   // Reading the request makes every route dynamic, which the per-request CSP
-  // nonce requires (see ADR 0001).
-  await headers()
+  // nonce requires (see ADR 0001). next-themes needs the nonce for its script.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
 
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning className={cn(GeistSans.variable, GeistMono.variable)}>
+      <body>
+        <ThemeProvider nonce={nonce}>
+          <TooltipProvider delayDuration={400}>{children}</TooltipProvider>
+          <Toaster />
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

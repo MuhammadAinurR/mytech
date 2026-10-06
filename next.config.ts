@@ -19,6 +19,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Keeps screenshots used for design review free of the floating dev badge.
+  devIndicators: false,
   reactStrictMode: true,
   // Every page is per-user and must be dynamically rendered so the CSP nonce can
   // be applied. Cache Components (PPR) prerenders a static shell, which cannot
