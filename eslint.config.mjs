@@ -26,7 +26,8 @@ const eslintConfig = defineConfig([
     // The data-access layer is the only way into the database. Pages, actions,
     // and components call src/server/queries/* instead of the client directly.
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/server/**'],
+    // Tests may open and close connections for setup and teardown.
+    ignores: ['src/server/**', 'src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
