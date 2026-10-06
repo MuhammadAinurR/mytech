@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('pages are served with a nonce-based CSP and security headers', async ({ request }) => {
   const response = await request.get('/login')
+  expect(response.status()).toBe(200)
   const headers = response.headers()
   expect(headers['content-security-policy']).toMatch(
     /script-src 'self' 'nonce-[^']+' 'strict-dynamic'/,
