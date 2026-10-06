@@ -43,6 +43,13 @@
       "when": 1791329462259,
       "tag": "0005_companies_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791330885270,
+      "tag": "0006_projects",
+      "breakpoints": true
     }
   ]
 }
