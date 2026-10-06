@@ -1,0 +1,30 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/artifacts/
+
+# next.js
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# env files: only the example and the non-secret test config are committed
+.env*
+!.env.example
+!.env.test
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel

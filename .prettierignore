@@ -1,0 +1,10 @@
+.next
+node_modules
+drizzle/meta
+package-lock.json
+coverage
+playwright-report
+test-results
+artifacts
+next-env.d.ts
+AGENTS.md
