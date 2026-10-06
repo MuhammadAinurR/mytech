@@ -1,0 +1,10 @@
+# Enforce Conventional Commits (merge commits created by `git merge --no-ff` are allowed).
+subject=$(head -n1 "$1")
+case "$subject" in
+  Merge\ *) exit 0 ;;
+esac
+if ! printf '%s' "$subject" | grep -Eq '^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([a-z0-9-]+\))?!?: [^ ].{2,}$'; then
+  echo "Commit subject must follow Conventional Commits, e.g. 'feat(revenue): add recurring rule table'" >&2
+  echo "Got: $subject" >&2
+  exit 1
+fi
