@@ -27,7 +27,8 @@ const eslintConfig = defineConfig([
     // and components call src/server/queries/* instead of the client directly.
     files: ['src/**/*.{ts,tsx}'],
     // Tests may open and close connections for setup and teardown.
-    ignores: ['src/server/**', 'src/**/*.test.{ts,tsx}'],
+    // The worker is a server process too; it owns its connections' lifecycle.
+    ignores: ['src/server/**', 'src/worker/**', 'src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

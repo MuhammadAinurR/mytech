@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { closeDb } from '@/server/db'
 import { createRule, getRule } from '@/server/queries/recurring'
+import { closeQueue } from '@/server/queue'
 import { closeRedis } from '@/server/redis'
 import { createTestUser, signInAs } from '@/server/testing/factories'
 import { resetRequest } from '@/server/testing/next-request'
@@ -14,7 +15,7 @@ import {
 } from './actions'
 
 afterAll(async () => {
-  await Promise.all([closeDb(), closeRedis()])
+  await Promise.all([closeDb(), closeRedis(), closeQueue()])
 })
 beforeEach(() => resetRequest())
 

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { err, ok, type Result } from '@/lib/result'
 import { fieldErrors, uuidSchema } from '@/lib/validation'
 import { requireUser } from '@/server/auth/session'
+import { enqueueRuleGeneration } from '@/server/queue'
 import {
   createRule,
   deleteRule,
@@ -31,6 +32,7 @@ export async function createRuleAction(
   if (!parsed.success) return err('invalid', fieldErrors(parsed.error))
 
   const rule = await createRule(user.id, parsed.data)
+  await enqueueRuleGeneration(rule.id)
   refresh()
   return ok({ id: rule.id })
 }
@@ -47,6 +49,7 @@ export async function updateRuleAction(
 
   const rule = await updateRule(user.id, ruleId.data, parsed.data)
   if (!rule) return err('not_found')
+  await enqueueRuleGeneration(rule.id)
   refresh()
   return ok()
 }
@@ -62,6 +65,7 @@ export async function setRuleActiveAction(
 
   const rule = await setRuleActive(user.id, ruleId.data, isActive.data)
   if (!rule) return err('not_found')
+  if (rule.isActive) await enqueueRuleGeneration(rule.id)
   refresh()
   return ok()
 }
