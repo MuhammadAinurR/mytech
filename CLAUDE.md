@@ -80,6 +80,10 @@ using an API you are not sure about.
   `user_id` and every filter/sort column, `created_at`/`updated_at` everywhere,
   UUID ids. Use transactions where invariants matter. Every schema change ships
   as a generated, reviewed SQL migration.
+- **NULL-safe CHECKs.** A CHECK that evaluates to NULL passes. When a branch of
+  a CHECK compares a nullable column (`BETWEEN`, `IN`, `=`), guard it with an
+  explicit `col IS NOT NULL AND …`, and add a schema test that inserts the
+  NULL case.
 - **Errors.** Expected failures return `{ ok: false, error }` (see
   `src/lib/result.ts`). Unexpected ones throw to error boundaries. User-facing
   messages are generic and never leak internals.
