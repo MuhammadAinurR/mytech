@@ -1,1 +1,322 @@
 @import 'tailwindcss';
+
+/*
+ * Workbench design tokens. DESIGN.md is the source of truth for intent; this
+ * file is the source of truth for values. Tailwind's default palette, radii,
+ * shadows, font sizes, and weights are removed on purpose so components can
+ * only reach for tokens defined here.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Remove defaults so only tokens exist. */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-*: initial;
+  --font-weight-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
+  --blur-*: initial;
+
+  /* Typography: one sans, one mono. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', monospace;
+
+  --text-xs: 0.75rem; /* 12 */
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem; /* 13 */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem; /* 14 */
+  --text-base--line-height: 1.375rem;
+  --text-md: 1rem; /* 16 */
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.25rem; /* 20 */
+  --text-lg--line-height: 1.75rem;
+  --text-lg--letter-spacing: -0.01em;
+  --text-xl: 1.75rem; /* 28 */
+  --text-xl--line-height: 2.125rem;
+  --text-xl--letter-spacing: -0.02em;
+  --text-2xl: 2.5rem; /* 40 */
+  --text-2xl--line-height: 2.75rem;
+  --text-2xl--letter-spacing: -0.025em;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Colors: semantic only. Values live on :root / .dark below. */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-fill: var(--fill);
+  --color-fill-strong: var(--fill-strong);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-scrim: var(--scrim);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* One radius system. Nested elements follow inner = outer - padding. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* Elevation: shadows are reserved for layers that float above the page. */
+  --shadow-popover: var(--elevation-popover);
+  --shadow-dialog: var(--elevation-dialog);
+  --shadow-drag: var(--elevation-drag);
+
+  /* Motion. */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-fade-in: wb-fade-in 160ms var(--ease-out);
+  --animate-fade-out: wb-fade-out 120ms var(--ease-out);
+  --animate-pop-in: wb-pop-in 160ms var(--ease-out);
+  --animate-pop-out: wb-pop-out 120ms var(--ease-out);
+  --animate-dialog-in: wb-dialog-in 200ms var(--ease-out);
+  --animate-dialog-out: wb-dialog-out 120ms var(--ease-out);
+  --animate-sheet-in: wb-sheet-in 200ms var(--ease-out);
+  --animate-sheet-out: wb-sheet-out 160ms var(--ease-out);
+  --animate-shimmer: wb-shimmer 1.6s var(--ease-in-out) infinite;
+  --animate-spin: wb-spin 0.8s linear infinite;
+}
+
+/* ---------- Light ---------- */
+:root {
+  color-scheme: light;
+
+  --background: oklch(0.975 0.002 260);
+  --surface: oklch(0.995 0.001 260);
+  --surface-raised: oklch(0.998 0.001 260);
+  --fill: oklch(0.955 0.003 260);
+  --fill-strong: oklch(0.925 0.004 260);
+  --border: oklch(0.915 0.003 260);
+  --border-strong: oklch(0.85 0.005 260);
+
+  --text: oklch(0.22 0.006 260);
+  --text-muted: oklch(0.45 0.008 260);
+  --text-subtle: oklch(0.53 0.008 260);
+
+  --accent: oklch(0.5 0.13 258);
+  --accent-hover: oklch(0.45 0.13 258);
+  --accent-fg: oklch(0.985 0.004 258);
+  --accent-soft: oklch(0.5 0.13 258 / 0.1);
+
+  --success: oklch(0.52 0.12 155);
+  --warning: oklch(0.6 0.13 70);
+  --danger: oklch(0.52 0.18 27);
+  --danger-soft: oklch(0.52 0.18 27 / 0.08);
+
+  --scrim: oklch(0.2 0.01 260 / 0.28);
+
+  --elevation-popover:
+    0 0 0 1px oklch(0.2 0.01 260 / 0.06), 0 2px 4px -1px oklch(0.2 0.01 260 / 0.05),
+    0 8px 24px -6px oklch(0.2 0.01 260 / 0.1);
+  --elevation-dialog:
+    0 0 0 1px oklch(0.2 0.01 260 / 0.06), 0 4px 8px -2px oklch(0.2 0.01 260 / 0.06),
+    0 24px 48px -12px oklch(0.2 0.01 260 / 0.18);
+  --elevation-drag:
+    0 0 0 1px oklch(0.2 0.01 260 / 0.08), 0 6px 16px -4px oklch(0.2 0.01 260 / 0.16);
+}
+
+/* ---------- Dark: designed, not inverted ---------- */
+.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.155 0.004 260);
+  --surface: oklch(0.185 0.005 260);
+  --surface-raised: oklch(0.225 0.006 260);
+  --fill: oklch(0.26 0.006 260);
+  --fill-strong: oklch(0.3 0.007 260);
+  --border: oklch(0.265 0.006 260);
+  --border-strong: oklch(0.34 0.008 260);
+
+  --text: oklch(0.93 0.004 260);
+  --text-muted: oklch(0.74 0.008 260);
+  --text-subtle: oklch(0.64 0.008 260);
+
+  --accent: oklch(0.7 0.12 258);
+  --accent-hover: oklch(0.76 0.11 258);
+  --accent-fg: oklch(0.17 0.02 258);
+  --accent-soft: oklch(0.7 0.12 258 / 0.14);
+
+  --success: oklch(0.72 0.13 155);
+  --warning: oklch(0.79 0.12 75);
+  --danger: oklch(0.7 0.16 25);
+  --danger-soft: oklch(0.7 0.16 25 / 0.12);
+
+  --scrim: oklch(0.08 0.005 260 / 0.6);
+
+  --elevation-popover:
+    0 0 0 1px oklch(0.4 0.008 260 / 0.35), 0 8px 24px -6px oklch(0.05 0.005 260 / 0.55);
+  --elevation-dialog:
+    0 0 0 1px oklch(0.4 0.008 260 / 0.35), 0 24px 48px -12px oklch(0.05 0.005 260 / 0.7);
+  --elevation-drag:
+    0 0 0 1px oklch(0.45 0.008 260 / 0.4), 0 10px 24px -6px oklch(0.05 0.005 260 / 0.6);
+}
+
+/* ---------- Layout variables ---------- */
+:root {
+  /* Horizontal page padding; tables use it so cell text aligns with headers. */
+  --gutter: 1rem;
+  /* Offset for sticky table headers under any sticky top bar. */
+  --sticky-top: 0px;
+}
+@media (width >= 48rem) {
+  :root {
+    --gutter: 2rem;
+  }
+}
+
+/* ---------- Base ---------- */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  /* One focus treatment everywhere: a crisp accent outline, keyboard only. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* One icon stroke width (lucide). */
+  svg.lucide {
+    stroke-width: 1.5;
+    flex-shrink: 0;
+  }
+
+  /* Native date pickers follow color-scheme; just quiet the icon. */
+  input[type='date']::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+  }
+}
+
+/* Every money figure and numeric column. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* ---------- Motion ---------- */
+@keyframes wb-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes wb-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes wb-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+}
+@keyframes wb-pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@keyframes wb-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+@keyframes wb-dialog-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+@keyframes wb-sheet-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes wb-sheet-out {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes wb-shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes wb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
