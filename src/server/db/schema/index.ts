@@ -1,3 +1,4 @@
+export * from './credentials'
 export * from './enums'
 export * from './recurring'
 export * from './transactions'
