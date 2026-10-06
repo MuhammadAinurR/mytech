@@ -1,28 +1,12 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { authenticate } from '@/server/auth/service'
 import { createSession, validateSessionToken } from '@/server/auth/session-store'
 import { closeDb } from '@/server/db'
 import { getUserById } from '@/server/queries/users'
 import { closeRedis } from '@/server/redis'
-import { createTestUser, TEST_PASSWORD, uniqueIp } from '@/server/testing/factories'
-
-const cookieJar = new Map<string, string>()
-vi.mock('next/headers', () => ({
-  cookies: async () => ({
-    get: (name: string) =>
-      cookieJar.has(name) ? { name, value: cookieJar.get(name)! } : undefined,
-    set: (name: string, value: string) => cookieJar.set(name, value),
-    delete: (name: string) => cookieJar.delete(name),
-  }),
-  headers: async () => new Headers({ 'x-forwarded-for': '10.1.1.1' }),
-}))
-vi.mock('next/navigation', () => ({
-  redirect: (location: string) => {
-    throw Object.assign(new Error('NEXT_REDIRECT'), { location })
-  },
-}))
-vi.mock('next/cache', () => ({ revalidatePath: () => {} }))
+import { createTestUser, signInAs, TEST_PASSWORD, uniqueIp } from '@/server/testing/factories'
+import { request, resetRequest } from '@/server/testing/next-request'
 
 const { changePasswordAction, updateProfileAction } = await import('./actions')
 const { SESSION_COOKIE } = await import('@/server/auth/session')
@@ -31,13 +15,7 @@ afterAll(async () => {
   await Promise.all([closeDb(), closeRedis()])
 })
 
-beforeEach(() => cookieJar.clear())
-
-async function signInAs(userId: string) {
-  const { token } = await createSession(userId)
-  cookieJar.set(SESSION_COOKIE, token)
-  return token
-}
+beforeEach(() => resetRequest())
 
 describe('updateProfileAction', () => {
   it('requires a session', async () => {
@@ -118,7 +96,7 @@ describe('changePasswordAction', () => {
 
     await expect(validateSessionToken(otherDevice)).resolves.toBeNull()
     await expect(validateSessionToken(thisDevice)).resolves.toBeNull()
-    const fresh = cookieJar.get(SESSION_COOKIE)
+    const fresh = request.cookies.get(SESSION_COOKIE)?.value
     expect(fresh).toBeDefined()
     expect(fresh).not.toBe(thisDevice)
     await expect(validateSessionToken(fresh!)).resolves.toMatchObject({ userId: user.id })

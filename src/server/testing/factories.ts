@@ -1,6 +1,8 @@
 import 'server-only'
 
 import { hashPassword } from '../auth/password'
+import { SESSION_COOKIE } from '../auth/session'
+import { createSession } from '../auth/session-store'
 import { insertUser, type CurrentUser } from '../queries/users'
 
 export const TEST_PASSWORD = 'correct horse battery staple'
@@ -20,6 +22,14 @@ export async function createTestUser(
   })
   if (!result.ok) throw new Error(`createTestUser failed: ${result.error}`)
   return result.data
+}
+
+/** Makes the faked request carry a valid session for this user. */
+export async function signInAs(userId: string): Promise<string> {
+  const { request } = await import('./next-request')
+  const { token } = await createSession(userId)
+  request.cookies.set(SESSION_COOKIE, { value: token })
+  return token
 }
 
 export function uniqueIp(): string {
