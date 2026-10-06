@@ -15,6 +15,9 @@ env:
   REDIS_URL: redis://localhost:6379/2
   APP_URL: http://localhost:3100
   LOG_LEVEL: warn
+  # Throwaway key for CI only (32 bytes of 0x07); never used for real data.
+  ENCRYPTION_KEYS: '1:BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc='
+  ENCRYPTION_KEY_VERSION: '1'
 
 jobs:
   verify:

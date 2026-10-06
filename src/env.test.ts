@@ -7,9 +7,24 @@ const valid = {
   DATABASE_URL: 'postgres://user:pass@localhost:5432/workbench_test',
   REDIS_URL: 'redis://localhost:6379/2',
   APP_URL: 'http://localhost:3100',
+  ENCRYPTION_KEYS: `1:${Buffer.alloc(32, 1).toString('base64')}`,
+  ENCRYPTION_KEY_VERSION: '1',
 }
 
 describe('parseEnv', () => {
+  it('validates the encryption keyring without revealing keys', () => {
+    const shortKey = Buffer.alloc(16, 7).toString('base64')
+    expect(() => parseEnv({ ...valid, ENCRYPTION_KEYS: `1:${shortKey}` })).toThrowError(
+      /ENCRYPTION_KEYS: key version 1 must decode to 32 bytes/,
+    )
+    expect(() => parseEnv({ ...valid, ENCRYPTION_KEYS: `1:${shortKey}` })).toThrowError(
+      expect.objectContaining({ message: expect.not.stringContaining(shortKey) }),
+    )
+    expect(() => parseEnv({ ...valid, ENCRYPTION_KEY_VERSION: '2' })).toThrowError(
+      /no key with version 2/,
+    )
+  })
+
   it('accepts a complete configuration and applies defaults', () => {
     const env = parseEnv(valid)
     expect(env.DATABASE_URL).toBe(valid.DATABASE_URL)
