@@ -13,7 +13,11 @@ test('pages are served with a nonce-based CSP and security headers', async ({ pa
   expect(headers['x-powered-by']).toBeUndefined()
 })
 
-test('health endpoint responds', async ({ request }) => {
+test('health endpoint reports Postgres and Redis', async ({ request }) => {
   const response = await request.get('/api/health')
-  expect(response.ok()).toBe(true)
+  expect(response.status()).toBe(200)
+  expect(await response.json()).toEqual({
+    status: 'ok',
+    checks: { postgres: 'ok', redis: 'ok' },
+  })
 })

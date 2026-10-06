@@ -20,6 +20,7 @@ const externalBaseUrl = process.env.PW_BASE_URL
 
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/global-setup.ts',
   outputDir: './test-results',
   fullyParallel: false,
   workers: 1,
