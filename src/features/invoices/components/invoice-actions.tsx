@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCheck, Ellipsis, Pencil, Printer, Send, Trash2, Undo2 } from 'lucide-react'
+import { CheckCheck, Ellipsis, FileDown, Pencil, Printer, Send, Trash2, Undo2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
@@ -54,6 +54,12 @@ export function InvoiceActions({
           <Printer />
           Print
         </Link>
+      </Button>
+      <Button asChild size="md">
+        <a href={`/api/invoices/${id}/pdf`} download>
+          <FileDown />
+          PDF
+        </a>
       </Button>
       {status === 'draft' ? (
         <Button variant="primary" loading={pending} onClick={() => move('sent')}>
