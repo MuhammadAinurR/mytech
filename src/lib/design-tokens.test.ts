@@ -77,3 +77,14 @@ describe.each(Object.entries(themes))('%s theme', (_name, tokens) => {
     }
   })
 })
+
+describe('paper (documents)', () => {
+  const light = block(':root')
+  it.each(['ink', 'ink-muted', 'ink-subtle'])('%s on paper meets AA', (token) => {
+    expect(contrast(light[token]!, light.paper!)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('is not redefined for dark mode', () => {
+    expect(block('.dark').paper).toBeUndefined()
+  })
+})

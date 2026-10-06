@@ -1,6 +1,7 @@
 'use client'
 
-import { Ellipsis, Pencil, Trash2 } from 'lucide-react'
+import { Ellipsis, FilePlus, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -106,6 +107,12 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/invoices/new?company=${company.id}`}>
+                            <FilePlus />
+                            New invoice
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => openEdit(company)}>
                           <Pencil />
                           Edit

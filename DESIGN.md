@@ -65,6 +65,11 @@ palette is removed: if a token is not listed here, it does not exist.
 | `warning`        | `oklch(0.6 0.13 70)`     | `oklch(0.79 0.12 75)`    | Due soon (dots and icons only)           |
 | `danger`         | `oklch(0.52 0.18 27)`    | `oklch(0.7 0.16 25)`     | Overdue, destructive, errors             |
 
+Documents (the invoice preview, the print page, and the PDF) use **paper**
+tokens: `paper`, `ink`, `ink-muted`, `ink-subtle`, `rule`, `rule-strong`. They
+are never redefined for dark mode, so an invoice looks the same on screen in
+either theme, on paper, and as a PDF, the way a PDF viewer shows a white page.
+
 Rules:
 
 - **Contrast is tested.** `src/lib/design-tokens.test.ts` checks that every
