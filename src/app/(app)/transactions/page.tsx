@@ -12,6 +12,7 @@ import {
   TransactionDialogProvider,
 } from '@/features/transactions/components/transaction-dialog'
 import { TransactionsTable } from '@/features/transactions/components/transactions-table'
+import { TransactionsTabs } from '@/features/transactions/components/transactions-tabs'
 import { TransactionsToolbar } from '@/features/transactions/components/transactions-toolbar'
 import { transactionListQuerySchema } from '@/features/transactions/schema'
 import { todayInTimeZone } from '@/lib/dates'
@@ -52,8 +53,10 @@ export default async function TransactionsPage({ searchParams }: PageProps<'/tra
         title="Transactions"
         description="Money in and out, month by month."
         actions={<AddTransactionButton />}
+        className="pb-4"
       />
-      <div className="px-(--gutter) pb-3">
+      <TransactionsTabs current="all" />
+      <div className="px-(--gutter) pt-6 pb-3">
         <MonthNav
           month={month}
           current={thisMonth}
