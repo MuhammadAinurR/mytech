@@ -364,3 +364,14 @@ export async function getReceivables(userId: string, today: string): Promise<Rec
     .groupBy(invoices.currency)
     .orderBy(asc(invoices.currency))
 }
+
+/** Sent, unpaid invoices, soonest due first (overdue ones lead). */
+export async function listDueInvoices(userId: string, limit = 5): Promise<InvoiceListItem[]> {
+  return db
+    .select(listColumns)
+    .from(invoices)
+    .innerJoin(companies, eq(companies.id, invoices.companyId))
+    .where(and(eq(invoices.userId, userId), eq(invoices.status, 'sent')))
+    .orderBy(asc(invoices.dueDate), asc(invoices.number))
+    .limit(limit)
+}
