@@ -89,7 +89,13 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
       const target = from
         ? PROJECT_STATUSES[PROJECT_STATUSES.indexOf(from) + (event.code === 'ArrowRight' ? 1 : -1)]
         : undefined
-      const rect = target ? droppableRects.get(target) : undefined
+      // Rects are measured asynchronously after lifting; fall back to the DOM so a
+      // quick arrow press right after Space still lands in the next column.
+      const rect =
+        (target ? droppableRects.get(target) : undefined) ??
+        (target
+          ? document.querySelector(`[data-column="${target}"]`)?.getBoundingClientRect()
+          : undefined)
       if (!rect) return undefined
       return { x: rect.left + (rect.width - collisionRect.width) / 2, y: rect.top + 8 }
     }
@@ -324,6 +330,7 @@ function Column({
       </header>
       <div
         ref={setNodeRef}
+        data-column={status}
         className={cn(
           'flex min-h-32 flex-col gap-2 rounded-md bg-background p-2 transition-colors duration-150',
           isOver && 'bg-fill',

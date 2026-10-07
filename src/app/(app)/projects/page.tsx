@@ -6,6 +6,7 @@ import {
   NewProjectButton,
   ProjectDialogProvider,
 } from '@/features/projects/components/project-dialog'
+import { ProjectsViewSwitch } from '@/features/projects/components/projects-view-switch'
 import { todayInTimeZone } from '@/lib/dates'
 import { requireUser } from '@/server/auth/session'
 import { listProjects } from '@/server/queries/projects'
@@ -21,7 +22,12 @@ export default async function ProjectsPage() {
       <PageHeader
         title="Projects"
         description="Drag cards between columns, or use a card’s menu to move it."
-        actions={<NewProjectButton />}
+        actions={
+          <>
+            <ProjectsViewSwitch current="board" />
+            <NewProjectButton />
+          </>
+        }
       />
       <ProjectBoard projects={projects} today={todayInTimeZone(user.timezone)} />
     </ProjectDialogProvider>

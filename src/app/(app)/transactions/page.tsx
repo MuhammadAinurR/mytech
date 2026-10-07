@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
-import { MonthNav } from '@/features/transactions/components/month-nav'
+import { MonthNav } from '@/components/month-nav'
 import { MonthSummary } from '@/features/transactions/components/month-summary'
 import {
   AddTransactionButton,
