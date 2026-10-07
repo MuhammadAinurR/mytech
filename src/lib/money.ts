@@ -87,3 +87,20 @@ export function formatMoney(
   // Intl formats decimal strings exactly, so large amounts never lose precision.
   return formatter.format(toDecimalString(amountMinor, currency) as Intl.StringNumericLiteral)
 }
+
+/** Short form for chart axes and tight spaces: $5K, Rp 15M, −$1.2K. */
+export function formatMoneyCompact(
+  amountMinor: number,
+  currency: string,
+  locale = 'en-US',
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  })
+    .format(toDecimalString(amountMinor, currency) as Intl.StringNumericLiteral)
+    .replace(/^-/, '\u2212')
+}
