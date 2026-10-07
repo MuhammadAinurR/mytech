@@ -5,9 +5,10 @@ import { Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTransition } from 'react'
-import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
+import { Controller, useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
+import { CheckboxField } from '@/components/ui/checkbox'
 import { Field } from '@/components/ui/field'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { toast } from '@/components/ui/toaster'
@@ -17,7 +18,7 @@ import { CURRENCIES, formatMoney, parseMoneyInput } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 import { createInvoiceAction, updateInvoiceAction } from '../actions'
-import { type CompanyOption, EMPTY_LINE } from '../editor-shared'
+import { billTo, type CompanyOption, EMPTY_LINE, findClientByName } from '../editor-shared'
 import { computeTotals, formatPercent, parsePercent, parseQuantity } from '../lib/totals'
 import { invoiceFormSchema, type InvoiceFormValues } from '../schema'
 
@@ -39,19 +40,43 @@ export function InvoiceEditor({
   })
   const { errors } = form.formState
   const lines = useFieldArray({ control: form.control, name: 'items' })
-  const [companyId, issueDate] = useWatch({
+  const [companyId, issueDate, clientName] = useWatch({
     control: form.control,
-    name: ['companyId', 'issueDate'],
+    name: ['companyId', 'issueDate', 'clientName'],
   })
   const selectedCompany = companies.find((company) => company.id === companyId)
+  const savedClients = selectedCompany?.clients ?? []
+  // The saved client this invoice is billed to, by name; editing the name
+  // turns it back into a new client.
+  const savedClient = findClientByName(savedClients, clientName ?? '')
+  const canSaveClient = Boolean(selectedCompany) && (clientName ?? '').trim() !== '' && !savedClient
+
+  function pickClient(id: string) {
+    // "New client" clears the details a saved client filled in.
+    const fields = billTo(savedClients.find((client) => client.id === id))
+    const options = { shouldDirty: true }
+    form.setValue('clientName', fields.clientName, options)
+    form.setValue('clientAddress', fields.clientAddress, options)
+    form.setValue('clientEmail', fields.clientEmail, options)
+    form.setValue('clientTaxId', fields.clientTaxId, options)
+    if (form.formState.isSubmitted) {
+      void form.trigger(['clientName', 'clientAddress', 'clientEmail', 'clientTaxId'])
+    }
+  }
 
   const onSubmit = form.handleSubmit((values) =>
     startTransition(async () => {
+      const submitted = { ...values, saveClient: Boolean(values.saveClient) && canSaveClient }
       const result = invoiceId
-        ? await updateInvoiceAction(invoiceId, values)
-        : await createInvoiceAction(values)
+        ? await updateInvoiceAction(invoiceId, submitted)
+        : await createInvoiceAction(submitted)
       if (result.ok) {
-        toast.success(invoiceId ? 'Invoice updated' : 'Invoice saved as draft')
+        toast.success(invoiceId ? 'Invoice updated' : 'Invoice saved as draft', {
+          description:
+            result.data.savedClient && selectedCompany
+              ? `${values.clientName.trim()} is saved to ${selectedCompany.name}’s clients.`
+              : undefined,
+        })
         router.push(`/invoices/${'id' in result.data ? result.data.id : invoiceId}`)
         return
       }
@@ -112,6 +137,27 @@ export function InvoiceEditor({
 
       <Section title="Bill to">
         <div className="grid gap-5 sm:grid-cols-2">
+          {savedClients.length > 0 ? (
+            <div className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+              <Field
+                label="Saved client"
+                hideOptional
+                hint="Fills in the details below. Changes apply to this invoice only."
+              >
+                <Select
+                  value={savedClient?.id ?? ''}
+                  onChange={(event) => pickClient(event.target.value)}
+                >
+                  <option value="">New client</option>
+                  {savedClients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+          ) : null}
           <Field label="Client name" required error={errors.clientName?.message}>
             <Input autoComplete="off" {...form.register('clientName')} />
           </Field>
@@ -124,6 +170,22 @@ export function InvoiceEditor({
           <Field label="Tax ID" error={errors.clientTaxId?.message}>
             <Input className="font-mono" {...form.register('clientTaxId')} />
           </Field>
+          {canSaveClient && selectedCompany ? (
+            <Controller
+              control={form.control}
+              name="saveClient"
+              render={({ field }) => (
+                <CheckboxField
+                  className="sm:col-span-2"
+                  label={`Save to ${selectedCompany.name}’s clients`}
+                  hint="Pick them on the next invoice instead of typing their details."
+                  checked={Boolean(field.value)}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+          ) : null}
         </div>
       </Section>
 
