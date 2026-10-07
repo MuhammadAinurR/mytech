@@ -18,6 +18,7 @@
     "test:visual": "playwright test --project=visual",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --conditions=react-server scripts/db-migrate.ts",
+    "db:seed": "tsx --conditions=react-server scripts/db-seed.ts",
     "db:studio": "drizzle-kit studio",
     "keys:rotate": "tsx --conditions=react-server scripts/rotate-encryption-keys.ts",
     "prepare": "husky"

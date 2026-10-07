@@ -52,6 +52,8 @@ using an API you are not sure about.
 - Config lives in `.env.local` (gitignored). `.env.example` documents every
   variable. `.env.test` holds non-secret test values and is committed.
 - `npm run worker` runs the BullMQ worker as its own process.
+- `npm run build` (and so `npm run verify`) rewrites `.next`; restart a running
+  `npm run dev` afterwards or it may serve stale CSS/modules.
 
 ## Engineering practices
 
