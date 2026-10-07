@@ -42,7 +42,28 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      {
+        // The browser checks for a new worker on every navigation; never cache it.
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" },
+        ],
+      },
+      {
+        // Static fallback page: no scripts at all.
+        source: '/offline.html',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'",
+          },
+        ],
+      },
+    ]
   },
 }
 
