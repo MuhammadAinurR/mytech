@@ -66,8 +66,22 @@ async function open(
 for (const path of paths) {
   test.describe(path, () => {
     for (const theme of themes) {
-      test(`axe (${theme})`, async ({ browser }) => {
-        const page = await open(browser, path, { width: 1440, height: 900, theme })
+      test(`axe and console (${theme})`, async ({ browser }) => {
+        const errors: string[] = []
+        const context = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+          colorScheme: theme,
+          reducedMotion: 'reduce',
+          storageState: PUBLIC.includes(path) ? undefined : AUTH_STATE,
+        })
+        const page = await context.newPage()
+        page.on('console', (message) => {
+          if (message.type() === 'error') errors.push(message.text().slice(0, 300))
+        })
+        await page.goto(path)
+        await page.waitForLoadState('networkidle')
+        // Hydration mismatches and runtime errors fail the review, not just axe issues.
+        expect(errors, errors.join('\n')).toEqual([])
         const results = await new AxeBuilder({ page }).analyze()
         const summary = results.violations.map(
           (v) => `${v.id} (${v.impact}): ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`,
