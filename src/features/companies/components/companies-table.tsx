@@ -53,6 +53,9 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
               <TableHead className="w-full md:w-2/5">Company</TableHead>
               <TableHead className="hidden md:table-cell">Next number</TableHead>
               <TableHead className="hidden w-24 sm:table-cell">Currency</TableHead>
+              <TableHead numeric className="hidden w-24 sm:table-cell">
+                Clients
+              </TableHead>
               <TableHead numeric className="w-24">
                 Invoices
               </TableHead>
@@ -63,20 +66,19 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
           </TableHeader>
           <TableBody>
             {companies.map((company) => (
-              <TableRow key={company.id} data-row>
+              <TableRow key={company.id} data-row className="relative">
                 <TableCell className="max-w-0 py-2.5">
                   <div className="flex items-center gap-3">
                     <CompanyLogo company={company} />
                     <div className="min-w-0">
-                      <button
-                        type="button"
+                      <Link
+                        href={`/companies/${company.id}`}
                         data-row-link
                         tabIndex={-1}
-                        onClick={() => openEdit(company)}
-                        className="block max-w-full cursor-pointer truncate text-left font-medium"
+                        className="block max-w-full truncate font-medium after:absolute after:inset-0 after:content-['']"
                       >
                         {company.name}
-                      </button>
+                      </Link>
                       <p className="truncate text-xs text-muted">
                         {company.email ?? company.taxId ?? '—'}
                       </p>
@@ -89,13 +91,19 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
                 <TableCell className="hidden text-muted sm:table-cell">
                   {company.defaultCurrency}
                 </TableCell>
+                <TableCell numeric className="hidden sm:table-cell">
+                  <span className={company.clientCount > 0 ? undefined : 'text-subtle'}>
+                    {company.clientCount}
+                  </span>
+                </TableCell>
                 <TableCell numeric>
                   <span className={company.invoiceCount > 0 ? undefined : 'text-subtle'}>
                     {company.invoiceCount}
                   </span>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <RowActions>
+                  {/* Above the row's stretched link, so the menu stays clickable. */}
+                  <RowActions className="relative z-10">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -139,7 +147,11 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
         open={deleting !== null}
         onOpenChange={(open) => (open ? null : setDeleting(null))}
         title={`Delete “${deleting?.name ?? ''}”?`}
-        description="It has no invoices, so nothing else is affected."
+        description={
+          deleting && deleting.clientCount > 0
+            ? `It has no invoices. Its ${deleting.clientCount === 1 ? 'saved client is' : `${deleting.clientCount} saved clients are`} deleted too.`
+            : 'It has no invoices, so nothing else is affected.'
+        }
         confirmLabel="Delete company"
         onConfirm={confirmDelete}
       />
