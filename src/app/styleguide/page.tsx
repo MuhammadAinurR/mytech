@@ -13,7 +13,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusDot } from '@/components/ui/status-dot'
 
-import { FormDemo, OverlayDemo, SegmentedDemo, TableDemo } from './demos'
+import { FormDemo, GlassDemo, OverlayDemo, SegmentedDemo, TableDemo } from './demos'
 
 export const metadata: Metadata = { title: 'Styleguide' }
 
@@ -222,6 +222,13 @@ export default function StyleguidePage() {
             <SegmentedDemo />
             <OverlayDemo />
           </div>
+        </Section>
+
+        <Section
+          title="Liquid Glass (mobile)"
+          description="Only the floating layer: tab bar, title bar buttons, sheets, menus, toasts, and the dashboard hero. Lists and forms stay solid."
+        >
+          <GlassDemo />
         </Section>
 
         <Section title="Empty, loading, and error states" flush>

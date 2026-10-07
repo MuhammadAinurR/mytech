@@ -97,6 +97,9 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  /* Mobile only: sheets, and the dashboard hero card. */
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
   --radius-full: 9999px;
 
   /* Elevation: shadows are reserved for layers that float above the page. */
@@ -158,6 +161,28 @@
   --rule: oklch(0.9 0.003 260);
   --rule-strong: oklch(0.8 0.004 260);
 
+  /* Liquid Glass (mobile floating layer only; see DESIGN.md → Mobile). */
+  --glass-tint: oklch(0.995 0.002 260 / 0.72);
+  --glass-tint-thick: oklch(0.99 0.002 260 / 0.86);
+  --glass-tint-accent: oklch(0.46 0.13 258 / 0.92);
+  --glass-tint-hero: oklch(0.995 0.002 260 / 0.5);
+  --glass-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.42), oklch(1 0 0 / 0) 52%);
+  --glass-rim: linear-gradient(
+    135deg,
+    oklch(1 0 0 / 0.95),
+    oklch(1 0 0 / 0.4) 28%,
+    oklch(1 0 0 / 0.08) 55%,
+    oklch(1 0 0 / 0.55)
+  );
+  --glass-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.7);
+  --glass-shadow:
+    0 0 0 0.5px oklch(0.2 0.01 260 / 0.08), 0 2px 6px -1px oklch(0.2 0.01 260 / 0.06),
+    0 12px 32px -8px oklch(0.2 0.01 260 / 0.16);
+  --glass-saturate: 1.8;
+  --glass-blur: 18px;
+  --ambient-1: oklch(0.62 0.14 258 / 0.4);
+  --ambient-2: oklch(0.72 0.1 228 / 0.32);
+
   --elevation-popover:
     0 0 0 1px oklch(0.2 0.01 260 / 0.06), 0 2px 4px -1px oklch(0.2 0.01 260 / 0.05),
     0 8px 24px -6px oklch(0.2 0.01 260 / 0.1);
@@ -198,6 +223,24 @@
 
   --chart-emphasis: oklch(0.64 0.12 258);
   --chart-context: oklch(0.52 0.008 260);
+
+  --glass-tint: oklch(0.22 0.006 260 / 0.78);
+  --glass-tint-thick: oklch(0.22 0.006 260 / 0.86);
+  --glass-tint-accent: oklch(0.72 0.12 258 / 0.92);
+  --glass-tint-hero: oklch(0.22 0.006 260 / 0.6);
+  --glass-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.08), oklch(1 0 0 / 0) 50%);
+  --glass-rim: linear-gradient(
+    135deg,
+    oklch(1 0 0 / 0.34),
+    oklch(1 0 0 / 0.12) 28%,
+    oklch(1 0 0 / 0.03) 55%,
+    oklch(1 0 0 / 0.18)
+  );
+  --glass-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.1);
+  --glass-shadow: 0 0 0 0.5px oklch(0 0 0 / 0.5), 0 12px 32px -8px oklch(0 0 0 / 0.6);
+  --glass-saturate: 1.6;
+  --ambient-1: oklch(0.55 0.14 258 / 0.34);
+  --ambient-2: oklch(0.6 0.1 228 / 0.2);
 
   --elevation-popover:
     0 0 0 1px oklch(0.4 0.008 260 / 0.35), 0 8px 24px -6px oklch(0.05 0.005 260 / 0.55);
@@ -272,6 +315,89 @@
 @utility tabular {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* ---------- Liquid Glass (mobile floating layer; DESIGN.md → Mobile) ----------
+ * Backdrop blur and saturation, a translucent tint under a sheen, a 1px rim
+ * light (the part that reads as glass), an inner top highlight, and a float
+ * shadow. Glass elements must be positioned (relative, absolute, or fixed):
+ * the rim is drawn by ::before. Variants only change the tint. */
+@utility glass {
+  background: var(--glass-sheen), var(--glass-tint);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--glass-rim);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+/* Sheets and menus: more tint, so long text and forms stay crisp. */
+@utility glass-thick {
+  --glass-tint: var(--glass-tint-thick);
+}
+/* Prominent actions: the accent behind glass, icon in accent-fg. */
+@utility glass-accent {
+  --glass-tint: var(--glass-tint-accent);
+  color: var(--accent-fg);
+}
+/* The one hero card: clearer, with a deeper blur, so the ambient field
+ * blooms through it. Only ever placed on the ambient field. */
+@utility glass-hero {
+  --glass-tint: var(--glass-tint-hero);
+  --glass-blur: 28px;
+}
+/* Pressed glass compresses, the way iOS 26 controls do. */
+@utility glass-press {
+  transition: transform 160ms var(--ease-out);
+  &:active {
+    transform: scale(0.96);
+  }
+}
+/* The single ambient light field behind the dashboard hero (mobile only). */
+@utility ambient-field {
+  background:
+    radial-gradient(70% 60% at 18% 38%, var(--ambient-1), transparent 72%),
+    radial-gradient(60% 55% at 92% 62%, var(--ambient-2), transparent 72%);
+  /* No edges: the field fades in and out vertically. */
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 65%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 65%, transparent);
+}
+
+/* Glass falls back to the opaque raised surface where blur is unavailable, or
+ * when the user asks for less transparency or more contrast. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root,
+  .dark {
+    --glass-tint: var(--surface-raised);
+    --glass-tint-thick: var(--surface-raised);
+    --glass-tint-hero: var(--surface-raised);
+    --glass-sheen: linear-gradient(transparent, transparent);
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root,
+  .dark {
+    --glass-tint: var(--surface-raised);
+    --glass-tint-thick: var(--surface-raised);
+    --glass-tint-accent: var(--accent);
+    --glass-tint-hero: var(--surface-raised);
+    --glass-sheen: linear-gradient(transparent, transparent);
+    --glass-rim: linear-gradient(var(--border-strong), var(--border-strong));
+    --glass-blur: 0px;
+    --ambient-1: transparent;
+    --ambient-2: transparent;
+  }
 }
 
 /* ---------- Motion ---------- */
