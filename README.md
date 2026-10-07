@@ -17,9 +17,12 @@ on a board and a calendar.
   Reveal and copy go through one rate-limited path, and every use is
   audit-logged.
 - **Companies and invoices.** Per-company numbering that stays correct under
-  concurrent creates. Line items, tax, and discount are computed on the server
-  with integer math. Invoices move from draft to sent to paid. Each one has a
-  print-optimized page and a server-rendered PDF.
+  concurrent creates. Each company keeps its regular clients: pick one on a new
+  invoice to fill in "Bill to", or save a new one from the invoice. Invoices
+  keep their own copy, so editing a client never changes an issued invoice.
+  Line items, tax, and discount are computed on the server with integer math.
+  Invoices move from draft to sent to paid. Each one has a print-optimized page
+  and a server-rendered PDF.
 - **Projects.** A drag-and-drop board (keyboard accessible, with a "Move to"
   fallback) and a month calendar of ongoing work. Ongoing projects need a
   start and end date.
@@ -119,8 +122,8 @@ docs/adr/              architecture decision records
   including cross-user isolation tests, concurrency (invoice numbering, board
   moves, recurring generation), and a real BullMQ worker.
 - **End to end (Playwright):** sign up, add a transaction, create and print an
-  invoice (and download its PDF), and move a project card by menu and by
-  keyboard.
+  invoice (and download its PDF), save clients and bill them from the editor,
+  and move a project card by menu and by keyboard.
 
 CI (`.github/workflows/ci.yml`) runs typecheck, lint, format check, tests, and
 build, then the Playwright suite, against Postgres and Redis service
