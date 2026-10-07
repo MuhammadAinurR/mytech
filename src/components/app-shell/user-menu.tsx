@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { logoutAction } from '@/features/auth/actions'
+import { SignOutForm } from '@/features/auth/components/sign-out-form'
 
 export type ShellUser = { name: string; email: string }
 
@@ -69,14 +69,14 @@ export function UserMenu({ user }: { user: ShellUser }) {
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <form action={logoutAction}>
+        <SignOutForm>
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full">
               <LogOut />
               Sign out
             </button>
           </DropdownMenuItem>
-        </form>
+        </SignOutForm>
       </DropdownMenuContent>
     </DropdownMenu>
   )

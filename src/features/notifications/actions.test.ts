@@ -52,13 +52,14 @@ describe('push actions', () => {
     const device = subscription()
     expect(await pushDeviceStatusAction(device.endpoint)).toEqual({
       ok: true,
-      data: { registered: false },
+      data: { deviceId: null },
     })
     expect(await enablePushAction(device)).toEqual({ ok: true, data: undefined })
-    expect(await listPushDevices(user.id)).toMatchObject([{ label: 'iPhone · Safari' }])
+    const [saved] = await listPushDevices(user.id)
+    expect(saved).toMatchObject({ label: 'iPhone · Safari' })
     expect(await pushDeviceStatusAction(device.endpoint)).toEqual({
       ok: true,
-      data: { registered: true },
+      data: { deviceId: saved!.id },
     })
 
     expect(await disablePushAction(device.endpoint)).toEqual({ ok: true, data: undefined })
@@ -97,7 +98,7 @@ describe('push actions', () => {
     await signedIn()
     expect(await pushDeviceStatusAction(device.endpoint)).toEqual({
       ok: true,
-      data: { registered: false },
+      data: { deviceId: null },
     })
     expect(await disablePushAction(device.endpoint)).toEqual({ ok: false, error: 'not_found' })
     expect(await removePushDeviceAction(saved!.id)).toEqual({ ok: false, error: 'not_found' })

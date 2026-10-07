@@ -62,14 +62,14 @@ export async function removePushDeviceAction(id: unknown): Promise<Result<undefi
   return ok()
 }
 
-/** Whether this browser's subscription is saved for the signed-in user. */
+/** This browser's saved device for the signed-in user, if any. */
 export async function pushDeviceStatusAction(
   endpoint: unknown,
-): Promise<Result<{ registered: boolean }>> {
+): Promise<Result<{ deviceId: string | null }>> {
   const user = await requireUser()
   const parsed = endpointSchema.safeParse(endpoint)
-  if (!parsed.success) return ok({ registered: false })
-  return ok({ registered: (await findPushDevice(user.id, parsed.data)) !== null })
+  if (!parsed.success) return ok({ deviceId: null })
+  return ok({ deviceId: await findPushDevice(user.id, parsed.data) })
 }
 
 /** Sends a test notification to every device the user has turned on. */

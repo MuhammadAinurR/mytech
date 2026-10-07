@@ -2,12 +2,16 @@
 
 import { useEffect } from 'react'
 
+import { captureInstallPrompt } from './install'
+
 /**
- * Registers /sw.js once the page has loaded. In development it registers with
+ * Registers /sw.js once the page has loaded, and starts listening for the
+ * browser's install prompt. In development it registers with
  * ?mode=dev, which turns off asset caching so hot reloads are never stale.
  */
 export function ServiceWorker() {
   useEffect(() => {
+    captureInstallPrompt()
     if (!('serviceWorker' in navigator)) return
     const url = process.env.NODE_ENV === 'development' ? '/sw.js?mode=dev' : '/sw.js'
     const register = () => {
