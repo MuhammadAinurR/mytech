@@ -45,6 +45,12 @@ export default defineConfig({
       testMatch: /visual\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // The same review in WebKit, the engine iOS uses (glass renders differently there).
+      name: 'visual-webkit',
+      testMatch: /visual\.spec\.ts/,
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
   webServer: externalBaseUrl
     ? undefined

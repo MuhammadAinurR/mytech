@@ -117,7 +117,8 @@ One system. Nested elements follow inner = outer − padding.
   toasts, the active segment), `shadow-dialog` (dialogs, command palette), and
   `shadow-drag` (a card being dragged). Each is soft and layered, with a
   hairline ring built in.
-- No glass, no backdrop blur, no gradients.
+- No glass, no backdrop blur, no gradients, with one exception: the mobile
+  floating layer uses Liquid Glass (see Mobile below).
 
 ## Motion
 
@@ -154,6 +155,67 @@ One system. Nested elements follow inner = outer − padding.
   it is. Offer one way forward.
 - **Command palette.** `⌘K` / `Ctrl K` for navigation and quick-add.
 
+## Mobile
+
+Below 768px, and when installed as an app, Workbench is a phone app, not a
+shrunken desktop. The model is iOS 26: content runs edge to edge, and the
+navigation layer floats above it in Liquid Glass. Desktop is unchanged.
+
+### Structure
+
+- **Tab bar.** A floating glass capsule above the home indicator: Home, Money,
+  Invoices, Projects, More. A separate glass circle beside it opens search
+  (the command palette). The selected tab sits on a lighter glass lens with an
+  accent icon and label; the lens slides between tabs. Credentials,
+  Companies, and Settings live under More.
+- **Title bar.** No opaque bar. Each page opens with a large title (28/34,
+  semibold, −0.02em) under floating glass circle buttons (44px): back on the
+  left, the page's actions on the right (usually one "+"). When the large
+  title scrolls away, a compact title fades in between the buttons, over a
+  scroll-edge fade so content dissolves under the status bar instead of being
+  cut.
+- **Content.** The canvas is `background`. Lists are inset grouped: `surface`
+  groups with `lg` radius, 16px from the screen edge, hairline separators inset
+  to the text, 52px rows. Row titles are `md` (16) regular, secondary lines `sm`
+  muted, trailing figures `md` tabular. Section headers are `xs` muted, sentence
+  case. Tables become lists; filters become segmented controls.
+- **Sheets.** Dialogs rise from the bottom as glass sheets with a grabber,
+  `lg`+ radius (24px), inset 8px from the screen edge. Long forms open nearly
+  full height. Footers stack full-width buttons above the home indicator.
+- **Safe areas.** `viewport-fit=cover`; every edge respects
+  `env(safe-area-inset-*)`. Content leaves room for the tab bar (its height,
+  the inset, and 24px).
+- **Touch.** Targets are at least 44×44. Pressed glass compresses (scale 0.96)
+  and brightens; no hover-only affordances.
+
+### Liquid Glass
+
+Glass is reserved for things that float: the tab bar and search circle, title
+bar buttons, sheets, menus and popovers, toasts, and one hero card (the
+dashboard's net figure). Never lists, rows, tables, forms, or ordinary cards:
+glass under dense text and money hurts legibility and turns the interface
+into decoration.
+
+The material, in `globals.css` as `.glass` (regular), `.glass-thick` (sheets,
+menus), and `.glass-hero`:
+
+1. **Backdrop:** blur 16–24px with saturation 1.6–1.8, so color behind it
+   blooms rather than greys out.
+2. **Tint:** a translucent `surface` (about 60% regular, 85% thick in light
+   mode; darker and a little more opaque in dark mode). Text on glass is always
+   `fg` or `muted` and meets 4.5:1 against the tint alone.
+3. **Rim light:** a 1px gradient edge, bright at the top left and faint at the
+   bottom right, plus an inner top highlight. This is what reads as glass;
+   flat translucency alone reads as fog.
+4. **Shadow:** a soft, wide float shadow; glass never sits flat on content.
+5. **Fallbacks:** without `backdrop-filter`, with
+   `prefers-reduced-transparency`, or with `prefers-contrast: more`, the
+   material becomes the opaque `surface-raised` with a hairline border.
+
+Glass needs something behind it. The dashboard's hero sits on one ambient
+light field: at most two soft radial washes of the accent at low chroma,
+static, mobile only. Nowhere else gets a background effect.
+
 ## Voice
 
 - Short, specific, human. Sentence case everywhere, including buttons and
@@ -168,7 +230,9 @@ One system. Nested elements follow inner = outer − padding.
 ## Hard bans
 
 Purple/blue-to-pink gradients, gradient text, glowing blobs, decorative grid or
-noise backgrounds. Glassmorphism and backdrop blur. Emoji as icons or in
+noise backgrounds. Glassmorphism and backdrop blur (outside the mobile
+floating layer, see Mobile). Glass on lists, tables, forms, or ordinary cards.
+Emoji as icons or in
 headings. Greeting copy. Identical shadowed cards in a three-column grid.
 Centered marketing heroes inside the app. Unmodified shadcn defaults. Rainbow
 charts. Filler content (lorem ipsum, "Acme Inc.", fake testimonials, stock
@@ -184,6 +248,9 @@ backgrounds on everything.
    ```sh
    PW_BASE_URL=http://localhost:3000 VISUAL_PATHS=/path,/other npm run test:visual
    ```
+
+   Mobile work is also checked in WebKit (`--project=visual-webkit`), the
+   engine iOS uses, since glass renders differently there.
 
    It writes screenshots at 390, 768, and 1440px in light and dark mode to
    `artifacts/screenshots/` and fails on any axe violation. Review every

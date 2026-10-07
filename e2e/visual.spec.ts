@@ -98,8 +98,9 @@ for (const path of paths) {
           await page.addStyleTag({
             content: '#main { height: auto !important; overflow: visible !important; }',
           })
+          const engine = browser.browserType().name() === 'webkit' ? '-webkit' : ''
           await page.screenshot({
-            path: `artifacts/screenshots/${slug(path)}-${viewport.name}-${theme}.png`,
+            path: `artifacts/screenshots/${slug(path)}-${viewport.name}-${theme}${engine}.png`,
             fullPage: true,
             animations: 'disabled',
           })
