@@ -61,12 +61,13 @@ const isColumn = (id: unknown): id is ProjectStatus =>
 export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; today: string }) {
   const [columns, setColumns] = useState<Board>(() => groupByStatus(projects))
   const [source, setSource] = useState(projects)
-  if (source !== projects) {
-    // Fresh server data (after any action) replaces local state.
+  const [activeId, setActiveId] = useState<string | null>(null)
+  if (source !== projects && activeId === null) {
+    // Fresh server data (after an action or a background refresh) replaces
+    // local state, but never mid-drag: it's applied once the card is dropped.
     setSource(projects)
     setColumns(groupByStatus(projects))
   }
-  const [activeId, setActiveId] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingMove | null>(null)
   const [deleting, setDeleting] = useState<ProjectItem | null>(null)
   const [, startTransition] = useTransition()
