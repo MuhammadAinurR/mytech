@@ -4,6 +4,8 @@ import { createContext, useContext, useId, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { useSettledWhilePressed } from './use-settled-while-pressed'
+
 type FieldContextValue = {
   id: string
   describedBy: string | undefined
@@ -44,14 +46,16 @@ export function Field({
   const generatedId = useId()
   const id = idProp ?? generatedId
   const messageId = `${id}-message`
-  const message = error ?? hint
+  // A message appearing or clearing mid-click would move the pressed control.
+  const shownError = useSettledWhilePressed(error)
+  const message = shownError ?? hint
 
   return (
     <FieldContext
       value={{
         id,
         describedBy: message ? messageId : undefined,
-        invalid: Boolean(error),
+        invalid: Boolean(shownError),
         required,
       }}
     >
@@ -68,8 +72,8 @@ export function Field({
         {message ? (
           <p
             id={messageId}
-            className={cn('text-xs', error ? 'text-danger' : 'text-muted')}
-            role={error ? 'alert' : undefined}
+            className={cn('text-xs', shownError ? 'text-danger' : 'text-muted')}
+            role={shownError ? 'alert' : undefined}
           >
             {message}
           </p>
