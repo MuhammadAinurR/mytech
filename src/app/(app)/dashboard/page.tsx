@@ -2,7 +2,9 @@ import { Bell } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+import { CachedView } from '@/components/app-shell/cached-view'
 import { Money } from '@/components/money'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { StatusDot } from '@/components/ui/status-dot'
 import { DismissReminder } from '@/features/dashboard/components/dismiss-reminder'
 import { NetChart } from '@/features/dashboard/components/net-chart'
@@ -22,6 +24,7 @@ import {
   getMonthlySummary,
   listTransactions,
 } from '@/server/queries/transactions'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -30,6 +33,12 @@ const DUE_SOON_DAYS = 14
 
 export default async function DashboardPage() {
   const user = await requireUser()
+  return (
+    <CachedView cacheKey="/dashboard" content={renderDashboard(user)} fallback={<PageSkeleton />} />
+  )
+}
+
+async function renderDashboard(user: CurrentUser) {
   const today = todayInTimeZone(user.timezone)
   const month = today.slice(0, 7)
   const currency = user.defaultCurrency

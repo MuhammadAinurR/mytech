@@ -2,7 +2,9 @@ import { KeyRound } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+import { CachedView } from '@/components/app-shell/cached-view'
 import { ListToolbar } from '@/components/list-toolbar'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -16,16 +18,28 @@ import {
   CREDENTIAL_TYPE_LABELS,
   CREDENTIAL_TYPES,
   credentialListQuerySchema,
+  type CredentialListQuery,
 } from '@/features/credentials/schema'
 import { withParams } from '@/lib/url'
 import { requireUser } from '@/server/auth/session'
 import { listCredentials } from '@/server/queries/credentials'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Credentials' }
 
 export default async function CredentialsPage({ searchParams }: PageProps<'/credentials'>) {
   const user = await requireUser()
   const query = credentialListQuerySchema.parse(await searchParams)
+  return (
+    <CachedView
+      cacheKey={withParams('/credentials', query)}
+      content={renderCredentials(user, query)}
+      fallback={<PageSkeleton />}
+    />
+  )
+}
+
+async function renderCredentials(user: CurrentUser, query: CredentialListQuery) {
   const list = await listCredentials(user.id, query)
   const href = (patch: { type?: string; q?: string; page?: number }) =>
     withParams('/credentials', { type: query.type, q: query.q, ...patch })

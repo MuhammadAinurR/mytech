@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+import { CachedView } from '@/components/app-shell/cached-view'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -11,24 +12,44 @@ import {
   AddTransactionButton,
   TransactionDialogProvider,
 } from '@/features/transactions/components/transaction-dialog'
+import { TransactionsSkeleton } from '@/features/transactions/components/transactions-skeleton'
 import { TransactionsTable } from '@/features/transactions/components/transactions-table'
 import { TransactionsTabs } from '@/features/transactions/components/transactions-tabs'
 import { TransactionsToolbar } from '@/features/transactions/components/transactions-toolbar'
-import { transactionListQuerySchema } from '@/features/transactions/schema'
+import {
+  transactionListQuerySchema,
+  type TransactionListQuery,
+} from '@/features/transactions/schema'
 import { todayInTimeZone } from '@/lib/dates'
 import { currentMonth, formatMonth } from '@/lib/months'
 import { withParams } from '@/lib/url'
 import { requireUser } from '@/server/auth/session'
 import { getMonthlySummary, listCategories, listTransactions } from '@/server/queries/transactions'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Transactions' }
 
 export default async function TransactionsPage({ searchParams }: PageProps<'/transactions'>) {
   const user = await requireUser()
-  const query = transactionListQuerySchema.parse(await searchParams)
+  const parsed = transactionListQuerySchema.parse(await searchParams)
+  // No month means this month, so both URLs share one cache entry.
+  const query = { ...parsed, month: parsed.month ?? currentMonth(user.timezone) }
+  return (
+    <CachedView
+      cacheKey={withParams('/transactions', query)}
+      content={renderTransactions(user, query)}
+      fallback={<TransactionsSkeleton />}
+    />
+  )
+}
+
+async function renderTransactions(
+  user: CurrentUser,
+  query: TransactionListQuery & { month: string },
+) {
   const today = todayInTimeZone(user.timezone)
   const thisMonth = currentMonth(user.timezone)
-  const month = query.month ?? thisMonth
+  const { month } = query
 
   const [list, summary, categories] = await Promise.all([
     listTransactions(user.id, { month, type: query.type, q: query.q, page: query.page }),

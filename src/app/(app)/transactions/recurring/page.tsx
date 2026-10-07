@@ -1,6 +1,8 @@
 import { Repeat } from 'lucide-react'
 import type { Metadata } from 'next'
 
+import { CachedView } from '@/components/app-shell/cached-view'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { NewRuleButton, RuleDialogProvider } from '@/features/recurring/components/rule-dialog'
@@ -10,11 +12,22 @@ import { todayInTimeZone } from '@/lib/dates'
 import { requireUser } from '@/server/auth/session'
 import { listRules } from '@/server/queries/recurring'
 import { listCategories } from '@/server/queries/transactions'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Recurring' }
 
 export default async function RecurringPage() {
   const user = await requireUser()
+  return (
+    <CachedView
+      cacheKey="/transactions/recurring"
+      content={renderRecurring(user)}
+      fallback={<PageSkeleton />}
+    />
+  )
+}
+
+async function renderRecurring(user: CurrentUser) {
   const today = todayInTimeZone(user.timezone)
   const [rules, categories] = await Promise.all([
     listRules(user.id, today),

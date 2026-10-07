@@ -1,6 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-export default function Loading() {
+/** First-visit placeholder matching the transactions page layout. */
+export function TransactionsSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading transactions">
       <div className="flex items-end justify-between gap-6 px-(--gutter) pt-8 pb-6">

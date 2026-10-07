@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { CachedView } from '@/components/app-shell/cached-view'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { InvoiceActions } from '@/features/invoices/components/invoice-actions'
 import { InvoiceDocument } from '@/features/invoices/components/invoice-document'
@@ -11,6 +13,7 @@ import { formatDateTime, todayInTimeZone } from '@/lib/dates'
 import { uuidSchema } from '@/lib/validation'
 import { requireUser } from '@/server/auth/session'
 import { getInvoice } from '@/server/queries/invoices'
+import type { CurrentUser } from '@/server/queries/users'
 
 export async function generateMetadata({ params }: PageProps<'/invoices/[id]'>): Promise<Metadata> {
   const user = await requireUser()
@@ -23,7 +26,17 @@ export default async function InvoicePage({ params }: PageProps<'/invoices/[id]'
   const user = await requireUser()
   const id = uuidSchema.safeParse((await params).id)
   if (!id.success) notFound()
-  const invoice = await getInvoice(user.id, id.data)
+  return (
+    <CachedView
+      cacheKey={`/invoices/${id.data}`}
+      content={renderInvoice(user, id.data)}
+      fallback={<PageSkeleton rows={6} />}
+    />
+  )
+}
+
+async function renderInvoice(user: CurrentUser, id: string) {
+  const invoice = await getInvoice(user.id, id)
   if (!invoice) notFound()
   const today = todayInTimeZone(user.timezone)
 

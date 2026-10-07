@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 
+import { CachedView } from '@/components/app-shell/cached-view'
 import { MonthNav } from '@/components/month-nav'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProjectCalendar } from '@/features/projects/components/project-calendar'
@@ -15,6 +17,7 @@ import { currentMonth, formatMonth } from '@/lib/months'
 import { firstParam, monthSchema } from '@/lib/validation'
 import { requireUser } from '@/server/auth/session'
 import { listOngoingInRange } from '@/server/queries/projects'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Project calendar' }
 
@@ -22,9 +25,19 @@ export default async function ProjectCalendarPage({
   searchParams,
 }: PageProps<'/projects/calendar'>) {
   const user = await requireUser()
-  const thisMonth = currentMonth(user.timezone)
   const requested = monthSchema.safeParse(firstParam((await searchParams).month))
-  const month = requested.success ? requested.data : thisMonth
+  const month = requested.success ? requested.data : currentMonth(user.timezone)
+  return (
+    <CachedView
+      cacheKey={`/projects/calendar?month=${month}`}
+      content={renderCalendar(user, month)}
+      fallback={<PageSkeleton />}
+    />
+  )
+}
+
+async function renderCalendar(user: CurrentUser, month: string) {
+  const thisMonth = currentMonth(user.timezone)
   const weeks = monthWeeks(month)
   const projects = await listOngoingInRange(user.id, weeks[0]![0]!, weeks.at(-1)![6]!)
 

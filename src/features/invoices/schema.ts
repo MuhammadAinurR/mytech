@@ -120,3 +120,5 @@ export const invoiceListQuerySchema = z.object({
   q: z.preprocess(firstParam, z.string().trim().max(100).optional()).catch(undefined),
   page: z.preprocess(firstParam, pageParamSchema),
 })
+
+export type InvoiceListQuery = z.infer<typeof invoiceListQuerySchema>
