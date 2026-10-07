@@ -50,6 +50,13 @@
       "when": 1791330885270,
       "tag": "0006_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791407317935,
+      "tag": "0007_company_clients",
+      "breakpoints": true
     }
   ]
 }
