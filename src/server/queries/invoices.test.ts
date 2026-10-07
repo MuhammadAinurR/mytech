@@ -2,11 +2,12 @@ import { eq } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import { type CompanyInput } from '@/features/companies/schema'
-import { type InvoiceInput } from '@/features/invoices/schema'
+import { type InvoiceFields } from '@/features/invoices/schema'
 
 import { closeDb, db } from '../db'
 import { invoiceItems } from '../db/schema'
 import { createTestUser } from '../testing/factories'
+import { listClients } from './clients'
 import { createCompany, deleteCompany, getCompany } from './companies'
 import {
   createInvoice,
@@ -32,7 +33,7 @@ const company = (overrides: Partial<CompanyInput> = {}): CompanyInput => ({
   ...overrides,
 })
 
-const invoice = (companyId: string, overrides: Partial<InvoiceInput> = {}): InvoiceInput => ({
+const invoice = (companyId: string, overrides: Partial<InvoiceFields> = {}): InvoiceFields => ({
   companyId,
   issueDate: '2026-10-07',
   dueDate: '2026-10-21',
@@ -128,7 +129,10 @@ describe('invoice contents', () => {
       taxRateBps: 0,
       items: [{ description: 'Single line', quantityMilli: 3000, unitPriceMinor: 1_000 }],
     })
-    expect(await updateInvoice(user.id, id, edited)).toEqual({ ok: true, data: undefined })
+    expect(await updateInvoice(user.id, id, edited)).toEqual({
+      ok: true,
+      data: { savedClient: false },
+    })
     expect((await getInvoice(user.id, id))?.totalMinor).toBe(3_000)
     expect(await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, id))).toHaveLength(
       1,
@@ -226,5 +230,81 @@ describe('invoice isolation', () => {
 
     // The owner's counter didn't move because of the intruder's attempt.
     expect((await getCompany(owner.user.id, owner.issuer.id))?.nextInvoiceNumber).toBe(2)
+  })
+})
+
+describe('saving the client from an invoice', () => {
+  const billTo = {
+    clientName: 'Northwind Labs',
+    clientAddress: 'Jl. Thamrin 10',
+    clientEmail: 'ap@northwind.example',
+    clientTaxId: '01.234.567.8-901.000',
+  }
+
+  it('adds the "Bill to" details to the company’s clients when asked', async () => {
+    const { user, issuer } = await setup()
+    const plain = await createInvoice(user.id, invoice(issuer.id, billTo))
+    expect(plain.ok && plain.data.savedClient).toBe(false)
+    expect(await listClients(user.id, issuer.id)).toEqual([])
+
+    const saved = await createInvoice(user.id, invoice(issuer.id, billTo), { saveClient: true })
+    expect(saved.ok && saved.data.savedClient).toBe(true)
+    expect(await listClients(user.id, issuer.id)).toMatchObject([
+      {
+        name: 'Northwind Labs',
+        address: 'Jl. Thamrin 10',
+        email: 'ap@northwind.example',
+        taxId: '01.234.567.8-901.000',
+      },
+    ])
+  })
+
+  it('leaves an existing client with that name as it is', async () => {
+    const { user, issuer } = await setup()
+    await createInvoice(user.id, invoice(issuer.id, billTo), { saveClient: true })
+    const again = await createInvoice(
+      user.id,
+      invoice(issuer.id, { ...billTo, clientName: 'NORTHWIND LABS', clientEmail: 'new@x.example' }),
+      { saveClient: true },
+    )
+    expect(again.ok && again.data.savedClient).toBe(false)
+    expect(await listClients(user.id, issuer.id)).toMatchObject([
+      { name: 'Northwind Labs', email: 'ap@northwind.example' },
+    ])
+  })
+
+  it('saves from a draft being edited, to the invoice’s own company', async () => {
+    const { user, issuer } = await setup()
+    const other = await createCompany(user.id, company({ name: 'Side project' }))
+    const created = await createInvoice(user.id, invoice(issuer.id))
+    if (!created.ok) throw new Error('create failed')
+
+    // The submitted company is ignored on edit; the invoice keeps its issuer.
+    const edited = await updateInvoice(
+      user.id,
+      created.data.id,
+      invoice(other.id, { ...billTo, clientName: 'Acme' }),
+      { saveClient: true },
+    )
+    expect(edited).toEqual({ ok: true, data: { savedClient: true } })
+    expect((await listClients(user.id, issuer.id)).map((c) => c.name)).toEqual(['Acme'])
+    expect(await listClients(user.id, other.id)).toEqual([])
+  })
+
+  it('saves nothing for someone else’s company or invoice', async () => {
+    const owner = await setup()
+    const intruder = await createTestUser()
+    const created = await createInvoice(owner.user.id, invoice(owner.issuer.id))
+    if (!created.ok) throw new Error('create failed')
+
+    expect(
+      await createInvoice(intruder.id, invoice(owner.issuer.id, billTo), { saveClient: true }),
+    ).toEqual({ ok: false, error: 'company_not_found' })
+    expect(
+      await updateInvoice(intruder.id, created.data.id, invoice(owner.issuer.id, billTo), {
+        saveClient: true,
+      }),
+    ).toEqual({ ok: false, error: 'not_found' })
+    expect(await listClients(owner.user.id, owner.issuer.id)).toEqual([])
   })
 })

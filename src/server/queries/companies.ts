@@ -6,7 +6,7 @@ import { type CompanyInput } from '@/features/companies/schema'
 import { err, ok, type Result } from '@/lib/result'
 
 import { db } from '../db'
-import { companies, invoices } from '../db/schema'
+import { clients, companies, invoices } from '../db/schema'
 import { type ImageMime } from '../images'
 
 /** Data access for companies (the user's issuing businesses), scoped by owner. */
@@ -39,15 +39,17 @@ export type Company = {
   logoUpdatedAt: Date | null
 }
 
-export type CompanyWithCount = Company & { invoiceCount: number }
+export type CompanyWithCount = Company & { invoiceCount: number; clientCount: number }
 
 export async function listCompanies(userId: string): Promise<CompanyWithCount[]> {
   return db
-    .select({ ...columns, invoiceCount: count(invoices.id) })
+    .select({
+      ...columns,
+      invoiceCount: db.$count(invoices, eq(invoices.companyId, companies.id)),
+      clientCount: db.$count(clients, eq(clients.companyId, companies.id)),
+    })
     .from(companies)
-    .leftJoin(invoices, eq(invoices.companyId, companies.id))
     .where(eq(companies.userId, userId))
-    .groupBy(companies.id)
     .orderBy(asc(companies.name))
 }
 

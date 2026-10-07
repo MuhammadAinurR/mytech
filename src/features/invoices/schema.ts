@@ -53,6 +53,8 @@ export const invoiceFormSchema = z
       .array(invoiceItemFormSchema)
       .min(1, 'Add at least one line.')
       .max(200, 'Use 200 lines or fewer.'),
+    /** Also add the "Bill to" details to the company's saved clients. */
+    saveClient: z.boolean().default(false),
   })
   .superRefine((value, ctx) => {
     const issue = (path: (string | number)[], message: string) =>
@@ -111,9 +113,12 @@ export const invoiceInputSchema = invoiceFormSchema.transform((value) => ({
     quantityMilli: parseQuantity(item.quantity)!,
     unitPriceMinor: parseMoneyInput(item.unitPrice, value.currency)!,
   })),
+  saveClient: value.saveClient,
 }))
 
 export type InvoiceInput = z.output<typeof invoiceInputSchema>
+/** What gets stored: the input without editor-only options. */
+export type InvoiceFields = Omit<InvoiceInput, 'saveClient'>
 
 export const invoiceListQuerySchema = z.object({
   status: z.preprocess(firstParam, z.enum(INVOICE_STATUSES).optional()).catch(undefined),

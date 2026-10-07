@@ -22,37 +22,52 @@ function refresh(id?: string) {
   revalidatePath('/dashboard')
 }
 
+/** A client was saved from an invoice: company pages and editors list it. */
+function refreshClients() {
+  revalidatePath('/companies', 'layout')
+  revalidatePath('/invoices', 'layout')
+}
+
 export async function createInvoiceAction(
   input: unknown,
 ): Promise<
-  Result<{ id: string; numberLabel: string }, 'invalid' | 'company_not_found' | 'number_taken'>
+  Result<
+    { id: string; numberLabel: string; savedClient: boolean },
+    'invalid' | 'company_not_found' | 'number_taken'
+  >
 > {
   const user = await requireUser()
   const parsed = invoiceInputSchema.safeParse(input)
   if (!parsed.success) return err('invalid', fieldErrors(parsed.error))
+  const { saveClient, ...fields } = parsed.data
 
-  const result = await createInvoice(user.id, parsed.data)
+  const result = await createInvoice(user.id, fields, { saveClient })
   if (!result.ok) {
     return result.error === 'company_not_found'
       ? err('company_not_found', { companyId: ['Choose one of your companies.'] })
       : err('number_taken')
   }
   refresh(result.data.id)
+  if (result.data.savedClient) refreshClients()
   return result
 }
 
 export async function updateInvoiceAction(
   id: unknown,
   input: unknown,
-): Promise<Result<undefined, 'invalid' | 'not_found' | 'not_editable'>> {
+): Promise<Result<{ savedClient: boolean }, 'invalid' | 'not_found' | 'not_editable'>> {
   const user = await requireUser()
   const invoiceId = uuidSchema.safeParse(id)
   if (!invoiceId.success) return err('not_found')
   const parsed = invoiceInputSchema.safeParse(input)
   if (!parsed.success) return err('invalid', fieldErrors(parsed.error))
+  const { saveClient, ...fields } = parsed.data
 
-  const result = await updateInvoice(user.id, invoiceId.data, parsed.data)
-  if (result.ok) refresh(invoiceId.data)
+  const result = await updateInvoice(user.id, invoiceId.data, fields, { saveClient })
+  if (result.ok) {
+    refresh(invoiceId.data)
+    if (result.data.savedClient) refreshClients()
+  }
   return result
 }
 
