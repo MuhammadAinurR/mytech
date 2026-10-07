@@ -14,6 +14,7 @@ export const JOBS = {
   generateAll: 'generate-recurring',
   generateRule: 'generate-rule',
   reminders: 'create-reminders',
+  invoiceReminders: 'send-invoice-reminders',
 } as const
 
 export type JobName = (typeof JOBS)[keyof typeof JOBS]

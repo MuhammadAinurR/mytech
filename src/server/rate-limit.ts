@@ -46,4 +46,6 @@ export const RATE_LIMITS = {
   loginIp: { bucket: 'login-ip', limit: 30, windowSeconds: 15 * 60 },
   signup: { bucket: 'signup', limit: 5, windowSeconds: 60 * 60 },
   credentialReveal: { bucket: 'reveal', limit: 30, windowSeconds: 5 * 60 },
+  // Per user: a test notification is a manual check, not a messaging channel.
+  testPush: { bucket: 'test-push', limit: 5, windowSeconds: 10 * 60 },
 } as const satisfies Record<string, RateLimitRule>

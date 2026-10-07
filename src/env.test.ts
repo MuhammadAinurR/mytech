@@ -43,4 +43,25 @@ describe('parseEnv', () => {
       expect.objectContaining({ message: expect.not.stringContaining(secretLooking) }),
     )
   })
+
+  it('takes push settings all together, or not at all (empty counts as unset)', () => {
+    const vapid = {
+      VAPID_PUBLIC_KEY: 'B'.repeat(87),
+      VAPID_PRIVATE_KEY: 'k'.repeat(43),
+      VAPID_SUBJECT: 'mailto:ops@example.com',
+    }
+    expect(parseEnv({ ...valid, ...vapid })).toMatchObject(vapid)
+    expect(
+      parseEnv({ ...valid, VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '', VAPID_SUBJECT: '' }),
+    ).toMatchObject({ VAPID_PUBLIC_KEY: undefined, VAPID_SUBJECT: undefined })
+    expect(() => parseEnv({ ...valid, VAPID_PUBLIC_KEY: vapid.VAPID_PUBLIC_KEY })).toThrowError(
+      /set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT together/,
+    )
+    expect(() => parseEnv({ ...valid, ...vapid, VAPID_SUBJECT: 'ops@example.com' })).toThrowError(
+      /VAPID_SUBJECT: must be a mailto: or https:\/\/ URL/,
+    )
+    expect(() => parseEnv({ ...valid, ...vapid, VAPID_PRIVATE_KEY: 'short' })).toThrowError(
+      expect.objectContaining({ message: expect.not.stringContaining('short') }),
+    )
+  })
 })

@@ -64,3 +64,42 @@ self.addEventListener('fetch', (event) => {
     )
   }
 })
+
+/* Push notifications (invoice reminders). The payload is a PushMessage:
+ * { title, body, url, tag }; see src/features/notifications/lib/reminders.ts. */
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { body: event.data ? event.data.text() : '' }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Workbench', {
+      body: data.body || '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
+      // Same tag replaces instead of stacking (e.g. a summary seen twice).
+      tag: data.tag,
+      data: { url: data.url || '/dashboard' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  // Only ever open our own pages.
+  const target = new URL(event.notification.data?.url || '/dashboard', self.location.origin)
+  const url = target.origin === self.location.origin ? target.href : self.location.origin
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windows) => {
+      const open = windows.find((client) => new URL(client.url).origin === self.location.origin)
+      if (open) {
+        await open.focus()
+        if ('navigate' in open) await open.navigate(url)
+        return
+      }
+      await self.clients.openWindow(url)
+    }),
+  )
+})

@@ -18,6 +18,10 @@ env:
   # Throwaway key for CI only (32 bytes of 0x07); never used for real data.
   ENCRYPTION_KEYS: '1:BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc='
   ENCRYPTION_KEY_VERSION: '1'
+  # Throwaway VAPID pair, same as .env.test.
+  VAPID_PUBLIC_KEY: 'BEOss_zzIa1PKClTkpOTvA6Dyr7-omR1T2LVFlGToBvbGnoP9HeaAKoG85PihLC_8cuQ_PxYMnjmv2mH1Yhjctc'
+  VAPID_PRIVATE_KEY: 'kjKAn3PiBj5IiqdS23IgN4zm_7eG-X5KDTf1WhFtlwQ'
+  VAPID_SUBJECT: 'mailto:test@workbench.local'
 
 jobs:
   verify:
