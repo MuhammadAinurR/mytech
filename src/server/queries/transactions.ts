@@ -172,3 +172,53 @@ export async function listCategories(userId: string, limit = 50): Promise<string
     .limit(limit)
   return rows.map((row) => row.category)
 }
+
+export type MonthPoint = {
+  month: string
+  incomeMinor: number
+  expenseMinor: number
+  netMinor: number
+}
+
+/**
+ * Income, expense, and net per month in one currency, oldest first, with
+ * empty months filled in so a chart always has every bar.
+ */
+export async function getMonthlySeries(
+  userId: string,
+  currency: string,
+  months: string[],
+): Promise<MonthPoint[]> {
+  if (months.length === 0) return []
+  const first = monthRange(months[0]!).start
+  const end = monthRange(months.at(-1)!).end
+  const rows = await db
+    .select({
+      month: sql<string>`to_char(${transactions.occurredOn}, 'YYYY-MM')`,
+      incomeMinor:
+        sql<number>`coalesce(sum(${transactions.amountMinor}) filter (where ${transactions.type} = 'income'), 0)::bigint`.mapWith(
+          Number,
+        ),
+      expenseMinor:
+        sql<number>`coalesce(sum(${transactions.amountMinor}) filter (where ${transactions.type} = 'expense'), 0)::bigint`.mapWith(
+          Number,
+        ),
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.currency, currency),
+        gte(transactions.occurredOn, first),
+        lt(transactions.occurredOn, end),
+      ),
+    )
+    .groupBy(sql`1`)
+  const byMonth = new Map(rows.map((row) => [row.month, row]))
+  return months.map((month) => {
+    const row = byMonth.get(month)
+    const incomeMinor = row?.incomeMinor ?? 0
+    const expenseMinor = row?.expenseMinor ?? 0
+    return { month, incomeMinor, expenseMinor, netMinor: incomeMinor - expenseMinor }
+  })
+}
