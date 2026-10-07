@@ -142,6 +142,7 @@ containers.
 | [0007](docs/adr/0007-data-access-layer-and-authorization.md) | One owner-scoped data-access layer behind an auth gate          |
 | [0008](docs/adr/0008-stale-while-revalidate-navigation.md)   | Stale-while-revalidate via the router cache (superseded)        |
 | [0009](docs/adr/0009-view-cache-for-navigation.md)           | A client view cache for stale-while-revalidate navigation       |
+| [0010](docs/adr/0010-push-reminders.md)                      | Web Push for invoice due-date reminders                         |
 
 ## Troubleshooting
 

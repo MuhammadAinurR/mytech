@@ -13,6 +13,8 @@ import { processJob } from './processor'
 export const SCHEDULES = [
   { id: 'generate-recurring', name: JOBS.generateAll, pattern: '*/15 * * * *' },
   { id: 'create-reminders', name: JOBS.reminders, pattern: '5 * * * *' },
+  // Every 15 minutes, so 09:00 is caught in every timezone (including :30 and :45 offsets).
+  { id: 'send-invoice-reminders', name: JOBS.invoiceReminders, pattern: '*/15 * * * *' },
 ] as const
 
 export async function startWorker({ queueName = QUEUE_NAME, schedule = true } = {}) {
@@ -38,6 +40,7 @@ export async function startWorker({ queueName = QUEUE_NAME, schedule = true } = 
     // Catch up immediately on boot instead of waiting for the first tick.
     await queue.add(JOBS.generateAll, {})
     await queue.add(JOBS.reminders, {})
+    await queue.add(JOBS.invoiceReminders, {})
   }
 
   await worker.waitUntilReady()
