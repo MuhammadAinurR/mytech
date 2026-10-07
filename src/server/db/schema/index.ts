@@ -1,3 +1,4 @@
+export * from './clients'
 export * from './credentials'
 export * from './enums'
 export * from './invoices'
