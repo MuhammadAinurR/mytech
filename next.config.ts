@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next'
 
+import { CLIENT_CACHE_SECONDS } from './src/lib/revalidation'
+
 /**
  * Static security headers for every response. The Content-Security-Policy is
  * not here: it carries a per-request nonce, so it is set in `src/proxy.ts`.
@@ -28,6 +30,11 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   serverExternalPackages: ['bullmq', 'ioredis'],
   experimental: {
+    // Keep visited pages in the client cache so revisits paint instantly; the
+    // app shell then refreshes them in the background (stale-while-revalidate).
+    // Mutations purge this cache via revalidatePath, and cookie changes (sign
+    // in/out, password change) purge it too. See ADR 0008.
+    staleTimes: { dynamic: CLIENT_CACHE_SECONDS },
     serverActions: {
       // Company logos are uploaded through a server action (max 512 KB).
       bodySizeLimit: '1mb',

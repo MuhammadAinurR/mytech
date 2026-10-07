@@ -102,6 +102,10 @@ docs/adr/              architecture decision records
 - **Sessions** are random tokens in an httpOnly cookie. Redis is keyed by the
   token's hash, with a sliding 30-day TTL. Changing your password revokes every
   session.
+- **Navigation is stale-while-revalidate.** A revisited page appears
+  instantly from the client cache, then refreshes in the background and
+  updates in place. It also refreshes when you return to the browser tab
+  (ADR 0008).
 - **Background work** runs in `npm run worker`, never in request handlers.
   Correctness comes from the database (unique occurrence keys and row locks),
   so jobs are safe to retry.
@@ -133,6 +137,7 @@ containers.
 | [0005](docs/adr/0005-credential-encryption.md)               | AES-256-GCM with versioned keys and audited reveals             |
 | [0006](docs/adr/0006-invoice-pdf-rendering.md)               | Invoice PDFs with react-pdf on node_modules React               |
 | [0007](docs/adr/0007-data-access-layer-and-authorization.md) | One owner-scoped data-access layer behind an auth gate          |
+| [0008](docs/adr/0008-stale-while-revalidate-navigation.md)   | Stale-while-revalidate between pages                            |
 
 ## Troubleshooting
 

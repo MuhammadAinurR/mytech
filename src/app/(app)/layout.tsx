@@ -1,3 +1,4 @@
+import { BackgroundRevalidate } from '@/components/app-shell/background-revalidate'
 import { CommandPaletteProvider } from '@/components/app-shell/command-palette'
 import { MobileNav } from '@/components/app-shell/mobile-nav'
 import { SidebarContent } from '@/components/app-shell/sidebar'
@@ -9,6 +10,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
 
   return (
     <CommandPaletteProvider>
+      <BackgroundRevalidate />
       <a
         href="#main"
         className="sr-only z-50 rounded-sm bg-surface-raised px-3 py-2 text-sm font-medium shadow-popover focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
