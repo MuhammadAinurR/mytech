@@ -71,3 +71,55 @@ test('save clients on a company and start an invoice from one', async ({ page })
   await expect(page.getByText('Client deleted')).toBeVisible()
   await expect(page.getByText('No saved clients yet')).toBeVisible()
 })
+
+test('pick a saved client on an invoice, or save a new one from it', async ({ page }) => {
+  const company = `Picker test ${Date.now()}`
+  await createCompany(page, company)
+  await page.getByRole('button', { name: 'Add client' }).click()
+  const dialog = page.getByRole('dialog', { name: 'New client' })
+  await dialog.getByLabel('Name').fill('Northwind Labs')
+  await dialog.getByLabel('Address').fill('Jl. Thamrin 10')
+  await dialog.getByLabel('Email').fill('ap@northwind.example')
+  await dialog.getByRole('button', { name: 'Add client' }).click()
+  await expect(page.getByText('Client added')).toBeVisible()
+
+  await page.goto('/invoices/new')
+  await expect(page.getByLabel('Saved client')).toBeHidden()
+  await page.getByLabel('Company').selectOption({ label: company })
+
+  // Picking fills "Bill to"; "New client" clears it again.
+  const picker = page.getByLabel('Saved client')
+  await picker.selectOption({ label: 'Northwind Labs' })
+  await expect(page.getByLabel('Client name')).toHaveValue('Northwind Labs')
+  await expect(page.getByLabel('Address')).toHaveValue('Jl. Thamrin 10')
+  await expect(page.getByLabel('Email')).toHaveValue('ap@northwind.example')
+  const save = page.getByRole('checkbox', { name: `Save to ${company}’s clients` })
+  await expect(save).toBeHidden()
+  await picker.selectOption({ label: 'New client' })
+  await expect(page.getByLabel('Client name')).toHaveValue('')
+  await expect(page.getByLabel('Email')).toHaveValue('')
+
+  // A new client, saved from the invoice.
+  await page.getByLabel('Client name').fill('Bluebird Coffee')
+  await page.getByLabel('Address').fill('Jl. Kemang Raya 8')
+  await expect(picker).toHaveValue('')
+  await save.check()
+  await page.getByLabel('Line 1 description').fill('Brand refresh')
+  await page.getByLabel('Line 1 unit price').fill('2,400')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page.getByText(`Bluebird Coffee is saved to ${company}’s clients.`)).toBeVisible()
+  await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}$/)
+
+  // It's on the company now, and the next invoice offers it.
+  await page.goto('/companies')
+  await page
+    .getByRole('row', { name: new RegExp(company) })
+    .getByRole('link', { name: company })
+    .click()
+  await expect(page.getByRole('row', { name: /Bluebird Coffee/ })).toContainText(
+    'Jl. Kemang Raya 8',
+  )
+  await page.getByRole('link', { name: 'New invoice' }).click()
+  await page.getByLabel('Saved client').selectOption({ label: 'Bluebird Coffee' })
+  await expect(page.getByLabel('Address')).toHaveValue('Jl. Kemang Raya 8')
+})

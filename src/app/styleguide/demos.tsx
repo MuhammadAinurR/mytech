@@ -24,6 +24,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { CheckboxField } from '@/components/ui/checkbox'
 import { Field } from '@/components/ui/field'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { KeyboardRows } from '@/components/ui/keyboard-rows'
@@ -69,6 +70,13 @@ export function FormDemo() {
       <Field label="Note" className="sm:col-span-2">
         <Textarea placeholder="Anything you want to remember about this entry" />
       </Field>
+      <CheckboxField
+        className="sm:col-span-2"
+        label="Save to Rofiq Studio’s clients"
+        hint="Pick them on the next invoice instead of typing their details."
+        defaultChecked
+      />
+      <CheckboxField label="Remind me a day before" />
     </div>
   )
 }

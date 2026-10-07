@@ -31,6 +31,8 @@ export type FieldProps = {
   className?: string
   /** Visually hide the label (it stays available to assistive tech). */
   hideLabel?: boolean
+  /** Drop the "Optional" tag on a control that isn't data, like a picker that fills other fields. */
+  hideOptional?: boolean
 }
 
 export function Field({
@@ -42,6 +44,7 @@ export function Field({
   id: idProp,
   className,
   hideLabel = false,
+  hideOptional = false,
 }: FieldProps) {
   const generatedId = useId()
   const id = idProp ?? generatedId
@@ -62,7 +65,7 @@ export function Field({
       <div className={cn('flex flex-col gap-1.5', className)}>
         <label htmlFor={id} className={cn('text-sm font-medium text-fg', hideLabel && 'sr-only')}>
           {label}
-          {required ? null : (
+          {required || hideOptional ? null : (
             <span className="ml-1.5 font-normal text-subtle" aria-hidden>
               Optional
             </span>
