@@ -15,7 +15,8 @@ export const metadata: Metadata = { title: 'New invoice' }
 export default async function NewInvoicePage({ searchParams }: PageProps<'/invoices/new'>) {
   const user = await requireUser()
   const companies = await companyOptions(user.id)
-  const preferred = firstParam((await searchParams).company)
+  const params = await searchParams
+  const preferred = { companyId: firstParam(params.company), clientId: firstParam(params.client) }
 
   return (
     <>

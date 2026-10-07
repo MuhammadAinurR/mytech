@@ -3,12 +3,12 @@ import 'server-only'
 import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm'
 
 import { computeTotals, formatInvoiceNumber } from '@/features/invoices/lib/totals'
-import { type InvoiceInput, type InvoiceStatus } from '@/features/invoices/schema'
+import { type InvoiceFields, type InvoiceStatus } from '@/features/invoices/schema'
 import { err, ok, type Result } from '@/lib/result'
 
 import { db, type Tx } from '../db'
 import { isUniqueViolation } from '../db/errors'
-import { companies, invoiceItems, invoices } from '../db/schema'
+import { clients, companies, invoiceItems, invoices } from '../db/schema'
 
 /**
  * Data access for invoices, scoped by owner. Numbers come from the issuing
@@ -175,7 +175,7 @@ export async function getInvoice(userId: string, id: string): Promise<InvoiceDet
   }
 }
 
-function priced(input: InvoiceInput) {
+function priced(input: InvoiceFields) {
   const totals = computeTotals({
     lines: input.items,
     taxRateBps: input.taxRateBps,
@@ -205,7 +205,7 @@ async function writeItems(
   tx: Tx,
   userId: string,
   invoiceId: string,
-  input: InvoiceInput,
+  input: InvoiceFields,
   lineTotals: number[],
 ) {
   await tx.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId))
@@ -222,10 +222,43 @@ async function writeItems(
   )
 }
 
+/**
+ * Adds the invoice's "Bill to" details to the company's saved clients. A
+ * client with the same name is left as it is. Returns whether one was added.
+ */
+async function saveClientFrom(
+  tx: Tx,
+  userId: string,
+  companyId: string,
+  input: InvoiceFields,
+): Promise<boolean> {
+  const added = await tx
+    .insert(clients)
+    .values({
+      userId,
+      companyId,
+      name: input.clientName,
+      address: input.clientAddress,
+      email: input.clientEmail,
+      taxId: input.clientTaxId,
+    })
+    .onConflictDoNothing()
+    .returning({ id: clients.id })
+  return added.length > 0
+}
+
+type SaveOptions = { saveClient?: boolean }
+
 export async function createInvoice(
   userId: string,
-  input: InvoiceInput,
-): Promise<Result<{ id: string; numberLabel: string }, 'company_not_found' | 'number_taken'>> {
+  input: InvoiceFields,
+  { saveClient = false }: SaveOptions = {},
+): Promise<
+  Result<
+    { id: string; numberLabel: string; savedClient: boolean },
+    'company_not_found' | 'number_taken'
+  >
+> {
   try {
     return await db.transaction(async (tx) => {
       // Claim the next number; the row lock serializes concurrent creates.
@@ -252,7 +285,8 @@ export async function createInvoice(
         })
         .returning({ id: invoices.id })
       await writeItems(tx, userId, created!.id, input, lineTotals)
-      return ok({ id: created!.id, numberLabel })
+      const savedClient = saveClient && (await saveClientFrom(tx, userId, input.companyId, input))
+      return ok({ id: created!.id, numberLabel, savedClient })
     })
   } catch (error) {
     // Only possible if the counter was manually set back onto an existing number.
@@ -265,11 +299,12 @@ export async function createInvoice(
 export async function updateInvoice(
   userId: string,
   id: string,
-  input: InvoiceInput,
-): Promise<Result<undefined, 'not_found' | 'not_editable'>> {
+  input: InvoiceFields,
+  { saveClient = false }: SaveOptions = {},
+): Promise<Result<{ savedClient: boolean }, 'not_found' | 'not_editable'>> {
   return db.transaction(async (tx) => {
     const [current] = await tx
-      .select({ status: invoices.status })
+      .select({ status: invoices.status, companyId: invoices.companyId })
       .from(invoices)
       .where(and(eq(invoices.userId, userId), eq(invoices.id, id)))
       .for('update')
@@ -279,7 +314,8 @@ export async function updateInvoice(
     const { fields, lineTotals } = priced(input)
     await tx.update(invoices).set(fields).where(eq(invoices.id, id))
     await writeItems(tx, userId, id, input, lineTotals)
-    return ok()
+    const savedClient = saveClient && (await saveClientFrom(tx, userId, current.companyId, input))
+    return ok({ savedClient })
   })
 }
 

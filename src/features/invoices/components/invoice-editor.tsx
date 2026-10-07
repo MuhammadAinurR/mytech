@@ -52,7 +52,7 @@ export function InvoiceEditor({
         : await createInvoiceAction(values)
       if (result.ok) {
         toast.success(invoiceId ? 'Invoice updated' : 'Invoice saved as draft')
-        router.push(`/invoices/${invoiceId ?? (result.data as { id: string }).id}`)
+        router.push(`/invoices/${'id' in result.data ? result.data.id : invoiceId}`)
         return
       }
       if (result.error === 'not_editable') {
