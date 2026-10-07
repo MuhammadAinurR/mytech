@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { createContext, useContext, type ReactNode } from 'react'
 
 import { useEntityDialog } from '@/components/use-entity-dialog'
@@ -26,13 +26,16 @@ export function CompanyDialogProvider({
   children,
   companies,
   defaultCurrency,
+  openFromUrl = true,
 }: {
   children: ReactNode
   /** Fresh list from the server, so the open dialog reflects updates (e.g. a new logo). */
   companies: Company[]
   defaultCurrency: string
+  /** Whether `?new=1` opens "New company" (not on a page where it means something else). */
+  openFromUrl?: boolean
 }) {
-  const dialog = useEntityDialog<Company>()
+  const dialog = useEntityDialog<Company>({ openFromUrl })
   const company = dialog.item
     ? (companies.find((candidate) => candidate.id === dialog.item?.id) ?? dialog.item)
     : null
@@ -82,6 +85,16 @@ export function AddCompanyButton({ variant = 'primary' }: { variant?: 'primary' 
     <Button variant={variant} size={variant === 'primary' ? 'md' : 'sm'} onClick={openCreate}>
       <Plus />
       Add company
+    </Button>
+  )
+}
+
+export function EditCompanyButton({ company }: { company: Company }) {
+  const { openEdit } = useCompanyDialog()
+  return (
+    <Button variant="secondary" onClick={() => openEdit(company)}>
+      <Pencil />
+      Edit company
     </Button>
   )
 }

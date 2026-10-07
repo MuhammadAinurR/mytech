@@ -19,13 +19,17 @@ test('add a company, upload a logo, and delete it', async ({ page }) => {
 
   const row = page.getByRole('row', { name: new RegExp(name) })
   await expect(row).toContainText('NW-0007')
-  await row.getByRole('button', { name, exact: true }).click()
+  // The row opens the company's page; it's edited from there.
+  await row.getByRole('link', { name, exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+  await page.getByRole('button', { name: 'Edit company' }).click()
   const edit = page.getByRole('dialog', { name: 'Edit company' })
   await edit.locator('input[type="file"]').setInputFiles('e2e/fixtures/logo.png')
   await expect(page.getByText('Logo updated')).toBeVisible()
   await expect(edit.getByRole('img', { name: `${name} logo` })).toBeVisible()
   await page.keyboard.press('Escape')
 
+  await page.getByRole('link', { name: 'Companies', exact: true }).first().click()
   await row.hover()
   await row.getByRole('button', { name: `Actions for ${name}` }).click()
   await page.getByRole('menuitem', { name: 'Delete' }).click()
