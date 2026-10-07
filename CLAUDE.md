@@ -100,6 +100,13 @@ using an API you are not sure about.
   merging a `ui/*` branch, take screenshots at 390, 768, and 1440px in both
   themes, review them against `DESIGN.md`, fix what you find, and run the axe
   check.
+- **Data pages.** A page that shows data does `requireUser()` and parses its
+  params, then renders its body through `CachedView` as an unawaited promise,
+  keyed by the canonical URL (ADR 0009). Don't add `loading.tsx`: it brings the
+  skeleton back on every navigation. Forms that edit a record (new/edit
+  invoice, settings) render directly, so they never start from stale values.
+  Client components holding optimistic state must not let server data overwrite
+  a change that is still in flight (see `ProjectBoard`).
 
 ## Commands
 

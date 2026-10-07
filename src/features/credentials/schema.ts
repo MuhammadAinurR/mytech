@@ -55,4 +55,6 @@ export const credentialListQuerySchema = z.object({
   page: z.preprocess(firstParam, pageParamSchema),
 })
 
+export type CredentialListQuery = z.infer<typeof credentialListQuerySchema>
+
 export const revealPurposeSchema = z.enum(['reveal', 'copy'])

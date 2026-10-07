@@ -1,6 +1,6 @@
 # 0008. Stale-while-revalidate between pages
 
-- Status: accepted
+- Status: superseded by [0009](0009-view-cache-for-navigation.md)
 - Date: 2026-10-07
 
 ## Context
@@ -47,3 +47,14 @@ refresh it in the background, and update in place.
 - `staleTimes` is still an experimental Next.js option. If it changes, the
   e2e test in `e2e/navigation.spec.ts` (no skeleton on revisit, background
   update arrives) will catch it.
+
+## Why it was superseded
+
+It didn't work past the first revisit. `router.refresh()` is documented as
+clearing the client cache for the current route, but in Next.js 16.4 it bumps
+a global version (`invalidateBfCache`), which drops every cached page. So each
+background refresh emptied the cache, and the next tab switch showed the
+skeleton again. Mutations (`revalidatePath`) do the same. The e2e test only
+checked a single revisit, so it missed this. The router cache also has no
+stale-while-revalidate mode for dynamic pages: a navigation either reuses an
+entry without refetching or refetches behind the loading boundary.

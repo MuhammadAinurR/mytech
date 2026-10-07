@@ -1,4 +1,5 @@
 import { BackgroundRevalidate } from '@/components/app-shell/background-revalidate'
+import { ViewCacheProvider } from '@/components/app-shell/cached-view'
 import { CommandPaletteProvider } from '@/components/app-shell/command-palette'
 import { MobileNav } from '@/components/app-shell/mobile-nav'
 import { SidebarContent } from '@/components/app-shell/sidebar'
@@ -32,7 +33,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
             tabIndex={-1}
             className="min-h-[calc(100dvh-3rem)] bg-surface outline-none [--sticky-top:3rem] md:h-[calc(100dvh-1rem)] md:min-h-0 md:overflow-y-auto md:rounded-lg md:border md:border-border md:[--sticky-top:0px]"
           >
-            {children}
+            <ViewCacheProvider key={user.id}>{children}</ViewCacheProvider>
           </main>
         </div>
       </div>

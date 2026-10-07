@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+import { CachedView } from '@/components/app-shell/cached-view'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { ProjectBoard } from '@/features/projects/components/project-board'
 import {
@@ -10,11 +12,18 @@ import { ProjectsViewSwitch } from '@/features/projects/components/projects-view
 import { todayInTimeZone } from '@/lib/dates'
 import { requireUser } from '@/server/auth/session'
 import { listProjects } from '@/server/queries/projects'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Projects' }
 
 export default async function ProjectsPage() {
   const user = await requireUser()
+  return (
+    <CachedView cacheKey="/projects" content={renderProjects(user)} fallback={<PageSkeleton />} />
+  )
+}
+
+async function renderProjects(user: CurrentUser) {
   const projects = await listProjects(user.id)
 
   return (

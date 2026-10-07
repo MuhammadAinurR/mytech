@@ -3,8 +3,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Fragment } from 'react'
 
+import { CachedView } from '@/components/app-shell/cached-view'
 import { ListToolbar } from '@/components/list-toolbar'
 import { Money } from '@/components/money'
+import { PageSkeleton } from '@/components/page-skeleton'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
@@ -14,17 +16,29 @@ import {
   INVOICE_STATUS_LABELS,
   INVOICE_STATUSES,
   invoiceListQuerySchema,
+  type InvoiceListQuery,
 } from '@/features/invoices/schema'
 import { todayInTimeZone } from '@/lib/dates'
 import { withParams } from '@/lib/url'
 import { requireUser } from '@/server/auth/session'
 import { getReceivables, listInvoices } from '@/server/queries/invoices'
+import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Invoices' }
 
 export default async function InvoicesPage({ searchParams }: PageProps<'/invoices'>) {
   const user = await requireUser()
   const query = invoiceListQuerySchema.parse(await searchParams)
+  return (
+    <CachedView
+      cacheKey={withParams('/invoices', query)}
+      content={renderInvoices(user, query)}
+      fallback={<PageSkeleton />}
+    />
+  )
+}
+
+async function renderInvoices(user: CurrentUser, query: InvoiceListQuery) {
   const today = todayInTimeZone(user.timezone)
   const [list, receivables] = await Promise.all([
     listInvoices(user.id, query),
