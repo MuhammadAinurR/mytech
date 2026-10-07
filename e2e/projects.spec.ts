@@ -61,9 +61,14 @@ test('moves a card with the keyboard and keeps it after reload', async ({ page }
       await expect(announcer).toHaveText(`${name} is over ${column}.`, { timeout: 500 })
     }).toPass({ timeout: 5_000 })
   }
+  // The board updates optimistically; reload only once the move is saved.
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith('/projects'),
+  )
   await page.keyboard.press('Space')
   await expect(announcer).toHaveText(`${name} dropped in Done.`)
   await expect(column(page, 'Done').getByText(name)).toBeVisible()
+  await saved
   await page.reload()
   await expect(column(page, 'Done').getByText(name)).toBeVisible()
 })
