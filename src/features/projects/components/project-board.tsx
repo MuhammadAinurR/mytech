@@ -62,15 +62,17 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
   const [columns, setColumns] = useState<Board>(() => groupByStatus(projects))
   const [source, setSource] = useState(projects)
   const [activeId, setActiveId] = useState<string | null>(null)
-  if (source !== projects && activeId === null) {
+  const [pending, setPending] = useState<PendingMove | null>(null)
+  const [saving, startTransition] = useTransition()
+  if (source !== projects && activeId === null && pending === null && !saving) {
     // Fresh server data (after an action or a background refresh) replaces
-    // local state, but never mid-drag: it's applied once the card is dropped.
+    // local state, but never while a move is in progress: mid-drag, waiting
+    // for dates, or saving. A render from before the move could otherwise
+    // put the card back. The latest data is applied once the board is idle.
     setSource(projects)
     setColumns(groupByStatus(projects))
   }
-  const [pending, setPending] = useState<PendingMove | null>(null)
   const [deleting, setDeleting] = useState<ProjectItem | null>(null)
-  const [, startTransition] = useTransition()
   const before = useRef<Board | null>(null)
   // Stable ids keep dnd-kit's accessibility attributes identical on server and client.
   const dndId = useId()
