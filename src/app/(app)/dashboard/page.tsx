@@ -124,7 +124,10 @@ async function renderDashboard(user: CurrentUser) {
             {recent.items.length === 0 ? (
               <QuietEmpty>
                 No transactions yet.{' '}
-                <Link href="/transactions?new=1" className="text-accent hover:underline">
+                <Link
+                  href="/transactions?new=1"
+                  className="font-medium text-accent hover:underline"
+                >
                   Add one
                 </Link>
                 .
