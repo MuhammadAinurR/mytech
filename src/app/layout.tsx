@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
 
+import { ServiceWorker } from '@/components/pwa/service-worker'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -13,6 +14,12 @@ import './globals.css'
 export const metadata: Metadata = {
   title: { default: 'Workbench', template: '%s · Workbench' },
   description: 'Personal and business operations in one place.',
+  applicationName: 'Workbench',
+  // Installed from Safari's share sheet, the app opens standalone with this
+  // name and icon. The manifest (app/manifest.ts) covers other browsers.
+  appleWebApp: { capable: true, title: 'Workbench', statusBarStyle: 'default' },
+  icons: { apple: '/icons/apple-touch-icon.png' },
+  formatDetection: { telephone: false },
 }
 
 export const viewport: Viewport = {
@@ -34,6 +41,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
           <TooltipProvider delayDuration={400}>{children}</TooltipProvider>
           <Toaster />
         </ThemeProvider>
+        <ServiceWorker />
       </body>
     </html>
   )

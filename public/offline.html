@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Offline · Workbench</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6f7f8;
+        --fg: #191b1d;
+        --muted: #5b5f66;
+        --border: #d9dbdf;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0c0e;
+          --fg: #e8e9eb;
+          --muted: #a5a9b0;
+          --border: #34373c;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px/22px ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 320px;
+        text-align: center;
+      }
+      img {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+      }
+      h1 {
+        margin: 20px 0 4px;
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+      a {
+        display: inline-flex;
+        margin-top: 20px;
+        height: 32px;
+        align-items: center;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--fg);
+        font-weight: 500;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>You’re offline</h1>
+      <p>Workbench needs a connection to load your data. Nothing you saved is lost.</p>
+      <a href="">Try again</a>
+    </main>
+  </body>
+</html>
