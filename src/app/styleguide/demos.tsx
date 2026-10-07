@@ -1,6 +1,20 @@
 'use client'
 
-import { CalendarDays, Copy, Ellipsis, Pencil, Printer, SquareKanban, Trash2 } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  CalendarDays,
+  ChevronLeft,
+  Copy,
+  Ellipsis,
+  FileText,
+  House,
+  Pencil,
+  Plus,
+  Printer,
+  Search,
+  SquareKanban,
+  Trash2,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { Money } from '@/components/money'
@@ -26,6 +40,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { CheckboxField } from '@/components/ui/checkbox'
 import { Field } from '@/components/ui/field'
+import { GlassButton } from '@/components/ui/glass-button'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { KeyboardRows } from '@/components/ui/keyboard-rows'
 import { SegmentedControl } from '@/components/ui/segmented'
@@ -41,6 +56,7 @@ import {
 } from '@/components/ui/table'
 import { toast } from '@/components/ui/toaster'
 import { Popover, PopoverContent, PopoverTrigger, Tooltip } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 export function FormDemo() {
   return (
@@ -319,6 +335,90 @@ export function OverlayDemo() {
       >
         Show toast
       </Button>
+    </div>
+  )
+}
+
+/**
+ * The mobile floating layer on a phone-sized frame: the hero card over the
+ * ambient field, glass circles, and a tab bar capsule over scrolling content,
+ * so the blur and rim light can be judged against real text.
+ */
+export function GlassDemo() {
+  const rows = [
+    ['Hosting · VPS 2 vCPU', 'Oct 6', '−$12.49'],
+    ['Design retainer', 'Oct 4', '+$4,200.00'],
+    ['Domain renewal', 'Oct 2', '−$18.00'],
+    ['Code signing certificate', 'Sep 29', '−$219.00'],
+    ['Client lunch', 'Sep 28', '−$46.20'],
+    ['Stock photos', 'Sep 26', '−$29.00'],
+  ]
+  return (
+    <div className="relative mx-auto h-[640px] w-[390px] max-w-full overflow-hidden rounded-[44px] border border-border bg-background">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-[34rem] ambient-field" />
+      <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-14">
+        <GlassButton aria-label="Back">
+          <ChevronLeft />
+        </GlassButton>
+        <GlassButton aria-label="Add" variant="accent">
+          <Plus />
+        </GlassButton>
+      </div>
+      <div className="relative px-4 pt-32">
+        <div className="glass relative rounded-2xl p-5 glass-hero">
+          <p className="text-sm text-muted">Net in October</p>
+          <p className="mt-1 tabular text-2xl font-semibold">$3,875.31</p>
+          <p className="mt-1 text-sm text-muted">
+            <span className="tabular text-fg">$4,200.00</span> in ·{' '}
+            <span className="tabular text-fg">$324.69</span> out
+          </p>
+        </div>
+        <div className="mt-6 overflow-hidden rounded-lg bg-surface">
+          {rows.map(([title, date, amount]) => (
+            <div
+              key={title}
+              className="flex min-h-13 items-center gap-3 border-b border-border px-4 py-2 last:border-0"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-md">{title}</p>
+                <p className="text-sm text-muted">{date}</p>
+              </div>
+              <p className="tabular text-md">{amount}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="absolute inset-x-4 bottom-6 flex items-center gap-2">
+        <nav
+          aria-label="Tab bar preview"
+          className="glass relative flex h-16 flex-1 items-center justify-between rounded-full px-1.5"
+        >
+          {[
+            [House, 'Home', true],
+            [ArrowLeftRight, 'Money', false],
+            [FileText, 'Invoices', false],
+            [SquareKanban, 'Projects', false],
+            [Ellipsis, 'More', false],
+          ].map(([Icon, label, active]) => {
+            const TabIcon = Icon as typeof House
+            return (
+              <span
+                key={label as string}
+                className={cn(
+                  'relative flex h-13 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-xs font-medium',
+                  active ? 'bg-fill/70 text-accent' : 'text-muted',
+                )}
+              >
+                <TabIcon className="size-6" aria-hidden />
+                {label as string}
+              </span>
+            )
+          })}
+        </nav>
+        <GlassButton aria-label="Search" className="size-16">
+          <Search />
+        </GlassButton>
+      </div>
     </div>
   )
 }

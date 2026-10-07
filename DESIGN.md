@@ -108,7 +108,9 @@ One system. Nested elements follow inner = outer − padding.
 | `xs`  | 4px   | Nested items (segments, kbd, skeleton bars)              |
 | `sm`  | 6px   | Buttons, inputs, menu items, small controls              |
 | `md`  | 10px  | Menus, popovers, panels (menu items: 10 − 4 padding = 6) |
-| `lg`  | 14px  | Dialogs, the main content panel                          |
+| `lg`  | 14px  | Dialogs, the main content panel, mobile list groups      |
+| `xl`  | 24px  | Mobile sheets                                            |
+| `2xl` | 28px  | The mobile dashboard hero card                           |
 
 ## Surfaces and elevation
 
@@ -180,7 +182,7 @@ navigation layer floats above it in Liquid Glass. Desktop is unchanged.
   muted, trailing figures `md` tabular. Section headers are `xs` muted, sentence
   case. Tables become lists; filters become segmented controls.
 - **Sheets.** Dialogs rise from the bottom as glass sheets with a grabber,
-  `lg`+ radius (24px), inset 8px from the screen edge. Long forms open nearly
+  `xl` radius (24px), inset 8px from the screen edge. Long forms open nearly
   full height. Footers stack full-width buttons above the home indicator.
 - **Safe areas.** `viewport-fit=cover`; every edge respects
   `env(safe-area-inset-*)`. Content leaves room for the tab bar (its height,
@@ -201,9 +203,10 @@ menus), and `.glass-hero`:
 
 1. **Backdrop:** blur 16–24px with saturation 1.6–1.8, so color behind it
    blooms rather than greys out.
-2. **Tint:** a translucent `surface` (about 60% regular, 85% thick in light
-   mode; darker and a little more opaque in dark mode). Text on glass is always
-   `fg` or `muted` and meets 4.5:1 against the tint alone.
+2. **Tint:** a translucent `surface`: 72% regular and 86% thick in light
+   mode, a darker 78% and 86% in dark mode. Text on glass is always `fg` or
+   `muted`, and `design-tokens.test.ts` proves it meets 4.5:1 with the tint
+   over anything that can sit behind it, accent-colored areas included.
 3. **Rim light:** a 1px gradient edge, bright at the top left and faint at the
    bottom right, plus an inner top highlight. This is what reads as glass;
    flat translucency alone reads as fog.
@@ -250,7 +253,9 @@ backgrounds on everything.
    ```
 
    Mobile work is also checked in WebKit (`--project=visual-webkit`), the
-   engine iOS uses, since glass renders differently there.
+   engine iOS uses, for layout, type, and the glass rim. Playwright's WebKit
+   doesn't render backdrop blur in screenshots, so judge blur in Chromium and
+   confirm it on a real iPhone.
 
    It writes screenshots at 390, 768, and 1440px in light and dark mode to
    `artifacts/screenshots/` and fails on any axe violation. Review every
