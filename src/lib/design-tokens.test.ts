@@ -65,8 +65,15 @@ describe.each(Object.entries(themes))('%s theme', (_name, tokens) => {
     expect(contrast(tokens.accent!, tokens.background!)).toBeGreaterThanOrEqual(3)
   })
 
-  it('status dots reach 3:1 against surfaces (non-text contrast)', () => {
-    for (const tone of ['success', 'warning', 'danger', 'accent']) {
+  it('status dots and chart marks reach 3:1 against surfaces (non-text contrast)', () => {
+    for (const tone of [
+      'success',
+      'warning',
+      'danger',
+      'accent',
+      'chart-emphasis',
+      'chart-context',
+    ]) {
       expect(contrast(tokens[tone]!, tokens.surface!)).toBeGreaterThanOrEqual(3)
     }
   })

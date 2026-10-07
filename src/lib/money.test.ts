@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   currencyExponent,
   formatMoney,
+  formatMoneyCompact,
   isCurrencyCode,
   parseMoneyInput,
   toDecimalString,
@@ -88,5 +89,15 @@ describe('isCurrencyCode', () => {
     expect(isCurrencyCode('USD')).toBe(true)
     expect(isCurrencyCode('usd')).toBe(false)
     expect(isCurrencyCode('XYZ')).toBe(false)
+  })
+})
+
+describe('formatMoneyCompact', () => {
+  it('abbreviates large amounts with a true minus', () => {
+    expect(formatMoneyCompact(498_952, 'USD')).toBe('$5K')
+    expect(formatMoneyCompact(123_456_789, 'USD')).toBe('$1.2M')
+    expect(formatMoneyCompact(-150_000, 'USD')).toBe('\u2212$1.5K')
+    expect(formatMoneyCompact(15_000_000, 'IDR')).toBe('Rp\u00a015M')
+    expect(formatMoneyCompact(0, 'USD')).toBe('$0')
   })
 })

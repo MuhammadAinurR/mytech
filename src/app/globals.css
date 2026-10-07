@@ -86,6 +86,9 @@
   --color-ink-subtle: var(--ink-subtle);
   --color-rule: var(--rule);
   --color-rule-strong: var(--rule-strong);
+  /* Charts: one emphasis hue + one context neutral (validated for CVD and 3:1). */
+  --color-chart-emphasis: var(--chart-emphasis);
+  --color-chart-context: var(--chart-context);
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -144,6 +147,9 @@
 
   --scrim: oklch(0.2 0.01 260 / 0.28);
 
+  --chart-emphasis: oklch(0.5 0.13 258);
+  --chart-context: oklch(0.63 0.006 260);
+
   /* Paper: not redefined for dark mode on purpose. */
   --paper: oklch(0.995 0.001 260);
   --ink: oklch(0.21 0.006 260);
@@ -189,6 +195,9 @@
   --danger-soft: oklch(0.7 0.16 25 / 0.12);
 
   --scrim: oklch(0.08 0.005 260 / 0.6);
+
+  --chart-emphasis: oklch(0.64 0.12 258);
+  --chart-context: oklch(0.52 0.008 260);
 
   --elevation-popover:
     0 0 0 1px oklch(0.4 0.008 260 / 0.35), 0 8px 24px -6px oklch(0.05 0.005 260 / 0.55);
