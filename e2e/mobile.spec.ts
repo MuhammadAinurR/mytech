@@ -230,6 +230,88 @@ test('projects on a phone: one column at a time, a long press reorders, the menu
   await expect(page.getByRole('button', { name: new RegExp(first) })).toContainText('14 days left')
 })
 
+test('credentials on a phone: reveal and copy from the row, tap to edit, long-press to delete', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  const stamp = Date.now()
+  const label = `Phone secret ${stamp}`
+  const secret = `s3cret-${stamp}`
+  await page.goto('/credentials')
+  await page.getByRole('button', { name: 'Add credential' }).first().click()
+  const dialog = page.getByRole('dialog', { name: 'New credential' })
+  await dialog.getByLabel('Name', { exact: true }).fill(label)
+  await dialog.getByLabel('Username').fill('ops')
+  await dialog.getByLabel('Secret', { exact: true }).fill(secret)
+  await dialog.getByRole('button', { name: 'Save credential' }).click()
+  await expect(page.getByText('Credential saved')).toBeVisible()
+  await expect(page.getByRole('table')).toBeHidden()
+
+  // A narrow screen shows the revealed secret in a popover.
+  await page.getByRole('button', { name: `Reveal secret for ${label}` }).click()
+  await expect(page.getByRole('dialog').getByText(secret)).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByText(secret)).toHaveCount(0)
+  await page.getByRole('button', { name: `Copy secret for ${label}` }).click()
+  await expect(page.getByText('Secret copied')).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(secret)
+
+  const row = page.getByRole('button', { name: new RegExp(`^${label}`) })
+  await row.click()
+  await expect(page.getByRole('dialog', { name: 'Edit credential' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  // Long-press on touch, right-click with a mouse: the same menu.
+  await row.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Delete' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete credential' }).click()
+  await expect(page.getByText('Credential deleted')).toBeVisible()
+  await expect(row).toHaveCount(0)
+})
+
+test('companies and their clients on a phone: rows that open, menus that invoice', async ({
+  page,
+}) => {
+  const stamp = Date.now()
+  const company = `Phone Clients Co ${stamp}`
+  const client = `Phone Client ${stamp}`
+  await page.goto('/companies?new=1')
+  const companyDialog = page.getByRole('dialog', { name: 'New company' })
+  await companyDialog.getByLabel('Name').fill(company)
+  await companyDialog.getByLabel('Number prefix').fill(`C${String(stamp).slice(-6)}-`)
+  await companyDialog.getByRole('button', { name: 'Add company' }).click()
+  await expect(page.getByText('Company added')).toBeVisible()
+  await expect(page.getByRole('table')).toBeHidden()
+
+  // A company without invoices can be deleted from its long-press menu.
+  const companyRow = page.getByRole('link', { name: new RegExp(`^${company}`) })
+  await companyRow.click({ button: 'right' })
+  await expect(page.getByRole('menuitem', { name: 'New invoice' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeEnabled()
+  await page.keyboard.press('Escape')
+  await companyRow.click()
+  await expect(page.getByRole('heading', { level: 1, name: company })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Add client' }).first().click()
+  const clientDialog = page.getByRole('dialog', { name: 'New client' })
+  await clientDialog.getByLabel('Name').fill(client)
+  await clientDialog.getByLabel('Email').fill('ap@client.example')
+  await clientDialog.getByRole('button', { name: 'Add client' }).click()
+  await expect(page.getByText('Client added')).toBeVisible()
+
+  const results = await new AxeBuilder({ page }).analyze()
+  expect(results.violations.map((v) => `${v.id} (${v.impact})`)).toEqual([])
+
+  const clientRow = page.getByRole('button', { name: new RegExp(`^${client}`) })
+  await clientRow.click()
+  await expect(page.getByRole('dialog', { name: 'Edit client' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await clientRow.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'New invoice' }).click()
+  await expect(page).toHaveURL(/\/invoices\/new\?company=.+&client=/)
+  await expect(page.getByLabel('Client name')).toHaveValue(client)
+})
+
 test('the large title collapses into the title bar on scroll', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 480 })
   await page.goto('/more')
@@ -250,6 +332,7 @@ test('the mobile shell has no accessibility violations', async ({ page }) => {
     '/projects',
     '/projects/calendar',
     '/more',
+    '/credentials',
     '/companies',
     '/settings',
   ]) {

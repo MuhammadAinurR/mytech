@@ -45,6 +45,17 @@ type RowContent = {
   tone?: 'default' | 'danger'
 }
 
+function IconTile({ children }: { children: ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm bg-fill-strong text-fg [&_svg]:size-4"
+    >
+      {children}
+    </span>
+  )
+}
+
 function RowBody({
   title,
   subtitle,
@@ -58,14 +69,7 @@ function RowBody({
   return (
     <>
       {leading}
-      {icon ? (
-        <span
-          aria-hidden
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm bg-fill-strong text-fg [&_svg]:size-4"
-        >
-          {icon}
-        </span>
-      ) : null}
+      {icon ? <IconTile>{icon}</IconTile> : null}
       <span className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-b border-border py-2 pr-4 group-last/row:border-b-0">
         <span className="flex min-w-0 flex-1 flex-col">
           <span className={cn('truncate text-md', tone === 'danger' && 'text-danger')}>
@@ -84,11 +88,24 @@ function RowBody({
 const rowClasses =
   'group/row flex w-full items-center gap-3 pl-4 text-left text-fg transition-colors duration-150 active:bg-fill'
 
+const pressableClasses = 'select-none [-webkit-touch-callout:none]'
+
 /** A row that navigates (with a chevron). */
-export function InsetLinkRow({ href, ...content }: RowContent & { href: string }) {
+export function InsetLinkRow({
+  title,
+  subtitle,
+  icon,
+  leading,
+  trailing,
+  detail,
+  tone,
+  className,
+  ...link
+}: RowContent & Omit<ComponentProps<typeof Link>, 'title' | 'children'>) {
+  // Forwards the rest (and ref) so a context-menu trigger can wrap it.
   return (
-    <Link href={href} className={rowClasses}>
-      <RowBody {...content} chevron />
+    <Link className={cn(rowClasses, pressableClasses, className)} {...link}>
+      <RowBody {...{ title, subtitle, icon, leading, trailing, detail, tone }} chevron />
     </Link>
   )
 }
@@ -110,15 +127,56 @@ export function InsetButtonRow({
   return (
     <button
       type={type}
-      className={cn(
-        rowClasses,
-        'cursor-pointer select-none [-webkit-touch-callout:none]',
-        className,
-      )}
+      className={cn(rowClasses, 'cursor-pointer', pressableClasses, className)}
       {...button}
     >
       <RowBody {...{ title, subtitle, icon, leading, trailing, detail, tone }} chevron={false} />
     </button>
+  )
+}
+
+/**
+ * A row that opens something when tapped and keeps its own buttons on the
+ * trailing edge (e.g. reveal and copy), which a whole-row button can't hold.
+ */
+export function InsetActionRow({
+  title,
+  subtitle,
+  icon,
+  leading,
+  controls,
+  onOpen,
+  className,
+  ...row
+}: Omit<RowContent, 'trailing' | 'detail' | 'tone'> & {
+  controls: ReactNode
+  onOpen: () => void
+} & Omit<ComponentProps<'div'>, 'title' | 'children'>) {
+  // Forwards the rest (and ref) so a context-menu trigger can wrap it.
+  return (
+    <div
+      className={cn(
+        'group/row flex w-full items-center gap-3 pl-4 text-fg transition-colors duration-150 has-[[data-row-open]:active]:bg-fill',
+        pressableClasses,
+        className,
+      )}
+      {...row}
+    >
+      {leading}
+      {icon ? <IconTile>{icon}</IconTile> : null}
+      <span className="flex min-h-13 min-w-0 flex-1 items-center gap-1 border-b border-border pr-2 group-last/row:border-b-0">
+        <button
+          type="button"
+          data-row-open
+          onClick={onOpen}
+          className="flex min-w-0 flex-1 cursor-pointer flex-col justify-center self-stretch py-2 text-left"
+        >
+          <span className="truncate text-md">{title}</span>
+          {subtitle ? <span className="truncate text-sm text-muted">{subtitle}</span> : null}
+        </button>
+        <span className="flex shrink-0 items-center">{controls}</span>
+      </span>
+    </div>
   )
 }
 
