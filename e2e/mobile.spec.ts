@@ -74,6 +74,42 @@ test('Home adds a transaction, an invoice, or a project in one tap', async ({ pa
   await expect(page.getByRole('dialog', { name: 'New project' })).toBeVisible()
 })
 
+test('transactions on a phone: grouped by day, a row menu, and delete from the sheet', async ({
+  page,
+}) => {
+  const name = `Phone list ${Date.now()}`
+  await page.goto('/transactions?new=1')
+  const sheet = page.getByRole('dialog', { name: 'New transaction' })
+  await sheet.getByLabel('Amount').fill('12.50')
+  await sheet.getByLabel('Category').fill(name)
+  await sheet.getByRole('button', { name: 'Add transaction' }).click()
+  await expect(page.getByText('Transaction added')).toBeVisible()
+
+  const today = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Today' }) })
+  const row = today.getByRole('button', { name: new RegExp(name) })
+  await expect(row).toHaveCount(1)
+
+  // Long-press on touch, right-click with a mouse: the same menu.
+  await row.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Duplicate' }).click()
+  await expect(sheet.getByLabel('Category')).toHaveValue(name)
+  await sheet.getByRole('button', { name: 'Add transaction' }).click()
+  await expect(today.getByRole('button', { name: new RegExp(name) })).toHaveCount(2)
+
+  // Tap to edit; phones delete from the sheet.
+  await today
+    .getByRole('button', { name: new RegExp(name) })
+    .first()
+    .click()
+  const edit = page.getByRole('dialog', { name: 'Edit transaction' })
+  await edit.getByRole('button', { name: 'Delete transaction' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
+  await expect(page.getByText('Transaction deleted')).toBeVisible()
+  await expect(today.getByRole('button', { name: new RegExp(name) })).toHaveCount(1)
+})
+
 test('the large title collapses into the title bar on scroll', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 480 })
   await page.goto('/more')
@@ -84,7 +120,15 @@ test('the large title collapses into the title bar on scroll', async ({ page }) 
 })
 
 test('the mobile shell has no accessibility violations', async ({ page }) => {
-  for (const path of ['/dashboard', '/transactions', '/more', '/companies', '/settings']) {
+  for (const path of [
+    '/dashboard',
+    '/transactions',
+    '/transactions/recurring',
+    '/transactions/renewals',
+    '/more',
+    '/companies',
+    '/settings',
+  ]) {
     await page.goto(path)
     await expect(tabs(page)).toBeVisible()
     const results = await new AxeBuilder({ page }).analyze()

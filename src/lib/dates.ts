@@ -67,12 +67,14 @@ export function isValidTimeZone(timeZone: string): boolean {
   }
 }
 
-type DateStyle = 'short' | 'medium' | 'long'
+type DateStyle = 'short' | 'medium' | 'long' | 'day'
 
 const dateStyles: Record<DateStyle, Intl.DateTimeFormatOptions> = {
   short: { month: 'short', day: 'numeric' },
   medium: { month: 'short', day: 'numeric', year: 'numeric' },
   long: { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' },
+  // List section headers on mobile: "Mon, Oct 5".
+  day: { weekday: 'short', month: 'short', day: 'numeric' },
 }
 
 export function formatDateOnly(

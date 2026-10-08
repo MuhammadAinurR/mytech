@@ -41,7 +41,7 @@ async function renderRenewals(user: CurrentUser) {
       />
       <TransactionsTabs current="renewals" />
       {upcoming.length > 0 ? (
-        <div className="pt-2">
+        <div className="pt-2 max-md:pt-5">
           <UpcomingList items={upcoming} />
         </div>
       ) : (
