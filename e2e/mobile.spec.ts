@@ -61,6 +61,19 @@ test('page actions float as glass buttons, and search opens the palette', async 
   await expect(page.getByPlaceholder('Search or jump to…')).toBeFocused()
 })
 
+test('Home adds a transaction, an invoice, or a project in one tap', async ({ page }) => {
+  await page.goto('/dashboard')
+  const add = page.getByRole('region', { name: 'Add' })
+  await add.getByRole('link', { name: 'New transaction' }).click()
+  await expect(page.getByRole('dialog', { name: 'New transaction' })).toBeVisible()
+  await page.goBack()
+  await add.getByRole('link', { name: 'New invoice' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'New invoice' })).toBeVisible()
+  await page.goBack()
+  await add.getByRole('link', { name: 'New project' }).click()
+  await expect(page.getByRole('dialog', { name: 'New project' })).toBeVisible()
+})
+
 test('the large title collapses into the title bar on scroll', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 480 })
   await page.goto('/more')
