@@ -48,7 +48,7 @@ async function renderRecurring(user: CurrentUser) {
       />
       <TransactionsTabs current="recurring" />
       {rules.length > 0 ? (
-        <div className="pt-2">
+        <div className="pt-2 max-md:pt-5">
           <RulesTable rules={rules} today={today} />
         </div>
       ) : (

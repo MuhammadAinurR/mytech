@@ -21,11 +21,14 @@ export function TransactionForm({
   defaultValues,
   categories,
   onDone,
+  onDelete,
 }: {
   transactionId?: string
   defaultValues: TransactionFormValues
   categories: string[]
   onDone: () => void
+  /** Editing on a phone, where rows have no menu: delete from the sheet. */
+  onDelete?: () => void
 }) {
   const [pending, startTransition] = useTransition()
   const listId = useId()
@@ -114,6 +117,11 @@ export function TransactionForm({
         </Field>
       </DialogBody>
       <DialogFooter>
+        {onDelete ? (
+          <Button variant="danger-ghost" className="md:hidden" onClick={onDelete}>
+            Delete transaction
+          </Button>
+        ) : null}
         <DialogClose asChild>
           <Button variant="secondary">Cancel</Button>
         </DialogClose>

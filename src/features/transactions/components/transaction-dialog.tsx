@@ -5,11 +5,14 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { GlassButton } from '@/components/ui/glass-button'
+import { toast } from '@/components/ui/toaster'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { toDecimalString } from '@/lib/money'
 import type { TransactionItem } from '@/server/queries/transactions'
 
+import { deleteTransactionAction } from '../actions'
 import { type TransactionFormValues } from '../schema'
 import { TransactionForm } from './transaction-form'
 
@@ -24,6 +27,8 @@ const TransactionDialogContext = createContext<{
   openCreate: () => void
   openEdit: (item: TransactionItem) => void
   openDuplicate: (item: TransactionItem) => void
+  /** Asks to confirm, then deletes (the mobile list and the edit sheet). */
+  askDelete: (item: TransactionItem) => void
 } | null>(null)
 
 export function useTransactionDialog() {
@@ -64,14 +69,24 @@ export function TransactionDialogProvider({
     }
   }, [pathname, router, searchParams])
 
+  const [deleting, setDeleting] = useState<TransactionItem | null>(null)
+
   const value = useMemo(
     () => ({
       openCreate: () => setState({ open: true, item: null, mode: 'create' }),
       openEdit: (item: TransactionItem) => setState({ open: true, item, mode: 'edit' }),
       openDuplicate: (item: TransactionItem) => setState({ open: true, item, mode: 'duplicate' }),
+      askDelete: (item: TransactionItem) => setDeleting(item),
     }),
     [],
   )
+
+  async function confirmDelete() {
+    if (!deleting) return
+    const result = await deleteTransactionAction(deleting.id)
+    if (result.ok) toast.success('Transaction deleted')
+    else toast.error('That transaction no longer exists.')
+  }
 
   const item = state.item
   const editing = state.mode === 'edit' ? item : null
@@ -108,9 +123,25 @@ export function TransactionDialogProvider({
             defaultValues={formDefaults}
             categories={categories}
             onDone={close}
+            onDelete={
+              editing
+                ? () => {
+                    close()
+                    setDeleting(editing)
+                  }
+                : undefined
+            }
           />
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => (open ? null : setDeleting(null))}
+        title="Delete this transaction?"
+        description="It will be removed from your history and monthly totals."
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+      />
     </TransactionDialogContext>
   )
 }

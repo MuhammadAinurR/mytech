@@ -13,6 +13,7 @@ import {
   TransactionDialogProvider,
 } from '@/features/transactions/components/transaction-dialog'
 import { TransactionsSkeleton } from '@/features/transactions/components/transactions-skeleton'
+import { TransactionsList } from '@/features/transactions/components/transactions-list'
 import { TransactionsTable } from '@/features/transactions/components/transactions-table'
 import { TransactionsTabs } from '@/features/transactions/components/transactions-tabs'
 import { TransactionsToolbar } from '@/features/transactions/components/transactions-toolbar'
@@ -78,7 +79,7 @@ async function renderTransactions(
         className="pb-4"
       />
       <TransactionsTabs current="all" />
-      <div className="px-(--gutter) pt-6 pb-3">
+      <div data-grouped className="px-(--gutter) pt-6 pb-3 max-md:px-4 max-md:pt-5">
         <MonthNav
           month={month}
           current={thisMonth}
@@ -93,7 +94,10 @@ async function renderTransactions(
 
       {list.items.length > 0 ? (
         <>
-          <TransactionsTable items={list.items} currentYear={today.slice(0, 4)} />
+          <div className="max-md:hidden">
+            <TransactionsTable items={list.items} currentYear={today.slice(0, 4)} />
+          </div>
+          <TransactionsList items={list.items} today={today} />
           <Pagination
             page={list.page}
             pageSize={list.pageSize}

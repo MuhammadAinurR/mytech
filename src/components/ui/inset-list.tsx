@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
-import { type ReactNode } from 'react'
+import { type ComponentProps, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -70,7 +70,7 @@ function RowBody({
           </span>
           {subtitle ? <span className="truncate text-sm text-muted">{subtitle}</span> : null}
         </span>
-        {trailing ? <span className="shrink-0 tabular text-md text-muted">{trailing}</span> : null}
+        {trailing ? <span className="shrink-0 tabular text-md">{trailing}</span> : null}
         {chevron ? <ChevronRight aria-hidden className="size-4 shrink-0 text-subtle" /> : null}
       </span>
     </>
@@ -91,14 +91,38 @@ export function InsetLinkRow({ href, ...content }: RowContent & { href: string }
 
 /** A row that acts in place (no chevron), e.g. sign out. */
 export function InsetButtonRow({
-  onClick,
   type = 'button',
-  ...content
-}: RowContent & { onClick?: () => void; type?: 'button' | 'submit' }) {
+  title,
+  subtitle,
+  icon,
+  leading,
+  trailing,
+  tone,
+  className,
+  ...button
+}: RowContent & Omit<ComponentProps<'button'>, 'title' | 'children'>) {
+  // Forwards the rest (and ref) so a context-menu trigger can wrap it.
   return (
-    <button type={type} onClick={onClick} className={cn(rowClasses, 'cursor-pointer')}>
-      <RowBody {...content} chevron={false} />
+    <button
+      type={type}
+      className={cn(
+        rowClasses,
+        'cursor-pointer select-none [-webkit-touch-callout:none]',
+        className,
+      )}
+      {...button}
+    >
+      <RowBody {...{ title, subtitle, icon, leading, trailing, tone }} chevron={false} />
     </button>
+  )
+}
+
+/** A read-only row (no action), e.g. an upcoming renewal. */
+export function InsetRowStatic(content: RowContent) {
+  return (
+    <div className="group/row flex w-full items-center gap-3 pl-4 text-fg">
+      <RowBody {...content} chevron={false} />
+    </div>
   )
 }
 

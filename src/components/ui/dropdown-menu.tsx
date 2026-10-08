@@ -18,7 +18,7 @@ export const floatingClasses = cn(
   'max-md:glass max-md:relative max-md:rounded-lg max-md:glass-thick',
 )
 
-const itemClasses = cn(
+export const itemClasses = cn(
   'relative flex h-8 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm outline-none select-none',
   // Touch-sized rows on mobile.
   'max-md:h-11 max-md:rounded-md max-md:px-3 max-md:text-md',
