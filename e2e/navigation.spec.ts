@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
 
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 import pg from 'pg'
 
@@ -119,6 +120,23 @@ test('a revisit shows the cached page while fresh data loads, then updates', asy
   // Then the fresh render replaces it in place.
   await expect(page.getByRole('button', { name: after, exact: true })).toBeVisible()
   expect(await seen()).toEqual({ sawSkeleton: false, sawStale: true })
+})
+
+test('a first visit names its loading skeleton as a status', async ({ page }) => {
+  await page.goto('/companies')
+  const release = await holdTransactionsTable()
+  try {
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'Transactions' })
+      .click()
+    await expect(page.getByRole('status', { name: 'Loading transactions' })).toBeVisible()
+    const results = await new AxeBuilder({ page }).include('#main').analyze()
+    expect(results.violations.map((v) => `${v.id} (${v.impact})`)).toEqual([])
+  } finally {
+    await release()
+  }
+  await expect(page.getByRole('heading', { level: 1, name: 'Transactions' })).toBeVisible()
 })
 
 test('going back shows the cached page and refreshes it', async ({ page, context }) => {
