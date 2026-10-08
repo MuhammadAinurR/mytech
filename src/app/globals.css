@@ -71,6 +71,7 @@
   --color-muted: var(--text-muted);
   --color-subtle: var(--text-subtle);
   --color-accent: var(--accent);
+  --color-glass-lens: var(--glass-lens);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
@@ -166,6 +167,7 @@
   --glass-tint-thick: oklch(0.99 0.002 260 / 0.86);
   --glass-tint-accent: oklch(0.46 0.13 258 / 0.92);
   --glass-tint-hero: oklch(0.995 0.002 260 / 0.5);
+  --glass-lens: oklch(0.2 0.01 260 / 0.07);
   --glass-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.42), oklch(1 0 0 / 0) 52%);
   --glass-rim: linear-gradient(
     135deg,
@@ -228,6 +230,7 @@
   --glass-tint-thick: oklch(0.22 0.006 260 / 0.86);
   --glass-tint-accent: oklch(0.72 0.12 258 / 0.92);
   --glass-tint-hero: oklch(0.22 0.006 260 / 0.6);
+  --glass-lens: oklch(0.98 0.004 260 / 0.1);
   --glass-sheen: linear-gradient(180deg, oklch(1 0 0 / 0.08), oklch(1 0 0 / 0) 50%);
   --glass-rim: linear-gradient(
     135deg,
@@ -256,10 +259,26 @@
   --gutter: 1rem;
   /* Offset for sticky table headers under any sticky top bar. */
   --sticky-top: 0px;
+  /* The color behind mobile content; the scroll edge fades to it. */
+  --canvas: var(--surface);
+  /* Mobile title bar: its 44px buttons end here, 8px below the status bar,
+   * and the large title starts 8px under them. */
+  --title-bar: calc(env(safe-area-inset-top) + 3.25rem);
+  --title-top: calc(var(--title-bar) + 0.5rem);
+  /* Mobile tab bar: distance from the bottom, and the room content leaves for it. */
+  --tab-bar-bottom: max(12px, calc(env(safe-area-inset-bottom) - 12px));
+  --tab-bar-space: calc(var(--tab-bar-bottom) + 4rem + 1.5rem);
 }
 @media (width >= 48rem) {
   :root {
     --gutter: 2rem;
+  }
+}
+/* Pages built from inset grouped lists sit on the grey canvas on mobile, like
+ * iOS; the rest keep the surface until they are converted. */
+@media (width < 48rem) {
+  #main:has([data-grouped]) {
+    --canvas: var(--background);
   }
 }
 
@@ -372,6 +391,13 @@
   /* No edges: the field fades in and out vertically. */
   -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 65%, transparent);
   mask-image: linear-gradient(transparent, #000 30%, #000 65%, transparent);
+}
+
+/* Mobile title bar: content dissolves under the status bar and the floating
+ * buttons instead of being cut: the canvas holds behind the bar and fades out
+ * just below it, so nothing collides with the compact title. */
+@utility scroll-edge {
+  background: linear-gradient(var(--canvas) calc(100% - 1.75rem), transparent);
 }
 
 /* Glass falls back to the opaque raised surface where blur is unavailable, or

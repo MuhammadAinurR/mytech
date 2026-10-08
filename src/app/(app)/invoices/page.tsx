@@ -8,6 +8,7 @@ import { ListToolbar } from '@/components/list-toolbar'
 import { Money } from '@/components/money'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { Button } from '@/components/ui/button'
+import { GlassButton } from '@/components/ui/glass-button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
@@ -63,6 +64,13 @@ async function renderInvoices(user: CurrentUser, query: InvoiceListQuery) {
         title="Invoices"
         description="Numbered per company. Drafts stay editable until sent."
         actions={newInvoice()}
+        mobileActions={
+          <GlassButton asChild variant="accent" aria-label="New invoice">
+            <Link href="/invoices/new">
+              <Plus />
+            </Link>
+          </GlassButton>
+        }
       />
 
       {receivables.length > 0 ? (

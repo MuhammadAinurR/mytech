@@ -37,7 +37,12 @@ async function renderProjects(user: CurrentUser) {
             <NewProjectButton />
           </>
         }
+        mobileActions={<NewProjectButton variant="glass" />}
       />
+      {/* On mobile the view switch sits under the title instead of in the bar. */}
+      <div className="px-(--gutter) pb-4 md:hidden">
+        <ProjectsViewSwitch current="board" />
+      </div>
       <ProjectBoard projects={projects} today={todayInTimeZone(user.timezone)} />
     </ProjectDialogProvider>
   )

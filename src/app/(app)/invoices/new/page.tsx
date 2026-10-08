@@ -21,6 +21,7 @@ export default async function NewInvoicePage({ searchParams }: PageProps<'/invoi
   return (
     <>
       <PageHeader
+        back={{ href: '/invoices', label: 'Invoices', mobileOnly: true }}
         title="New invoice"
         description="Saved as a draft. You can edit it until it is sent."
       />

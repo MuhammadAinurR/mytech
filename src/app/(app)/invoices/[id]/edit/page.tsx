@@ -24,6 +24,7 @@ export default async function EditInvoicePage({ params }: PageProps<'/invoices/[
   return (
     <>
       <PageHeader
+        back={{ href: `/invoices/${invoice.id}`, label: invoice.numberLabel, mobileOnly: true }}
         title={`Edit ${invoice.numberLabel}`}
         description={`Draft for ${invoice.clientName}`}
       />

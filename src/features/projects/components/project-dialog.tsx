@@ -5,6 +5,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 
 import { useEntityDialog } from '@/components/use-entity-dialog'
 import { Button } from '@/components/ui/button'
+import { GlassButton } from '@/components/ui/glass-button'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import type { ProjectItem } from '@/server/queries/projects'
 
@@ -62,8 +63,15 @@ export function ProjectDialogProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function NewProjectButton() {
+export function NewProjectButton({ variant = 'primary' }: { variant?: 'primary' | 'glass' }) {
   const { openCreate } = useProjectDialog()
+  if (variant === 'glass') {
+    return (
+      <GlassButton variant="accent" aria-label={'New project'} onClick={() => openCreate()}>
+        <Plus />
+      </GlassButton>
+    )
+  }
   return (
     <Button variant="primary" onClick={() => openCreate()}>
       <Plus />

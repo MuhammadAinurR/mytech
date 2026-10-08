@@ -35,6 +35,7 @@ export default async function SettingsPage() {
   return (
     <>
       <PageHeader
+        back={{ href: '/more', label: 'More', mobileOnly: true }}
         title="Settings"
         description="Your profile, regional defaults, notifications, and password."
       />

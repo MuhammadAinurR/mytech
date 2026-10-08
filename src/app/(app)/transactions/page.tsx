@@ -74,6 +74,7 @@ async function renderTransactions(
         title="Transactions"
         description="Money in and out, month by month."
         actions={<AddTransactionButton />}
+        mobileActions={<AddTransactionButton variant="glass" />}
         className="pb-4"
       />
       <TransactionsTabs current="all" />

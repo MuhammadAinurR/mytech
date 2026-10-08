@@ -5,6 +5,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 
 import { useEntityDialog } from '@/components/use-entity-dialog'
 import { Button } from '@/components/ui/button'
+import { GlassButton } from '@/components/ui/glass-button'
 import { Dialog, DialogBody, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import type { Company } from '@/server/queries/companies'
 
@@ -79,8 +80,19 @@ export function CompanyDialogProvider({
   )
 }
 
-export function AddCompanyButton({ variant = 'primary' }: { variant?: 'primary' | 'secondary' }) {
+export function AddCompanyButton({
+  variant = 'primary',
+}: {
+  variant?: 'primary' | 'secondary' | 'glass'
+}) {
   const { openCreate } = useCompanyDialog()
+  if (variant === 'glass') {
+    return (
+      <GlassButton variant="accent" aria-label={'Add company'} onClick={openCreate}>
+        <Plus />
+      </GlassButton>
+    )
+  }
   return (
     <Button variant={variant} size={variant === 'primary' ? 'md' : 'sm'} onClick={openCreate}>
       <Plus />
@@ -89,8 +101,21 @@ export function AddCompanyButton({ variant = 'primary' }: { variant?: 'primary' 
   )
 }
 
-export function EditCompanyButton({ company }: { company: Company }) {
+export function EditCompanyButton({
+  company,
+  variant = 'secondary',
+}: {
+  company: Company
+  variant?: 'secondary' | 'glass'
+}) {
   const { openEdit } = useCompanyDialog()
+  if (variant === 'glass') {
+    return (
+      <GlassButton aria-label="Edit company" onClick={() => openEdit(company)}>
+        <Pencil />
+      </GlassButton>
+    )
+  }
   return (
     <Button variant="secondary" onClick={() => openEdit(company)}>
       <Pencil />

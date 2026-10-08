@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 export function TransactionsSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading transactions">
-      <div className="flex items-end justify-between gap-6 px-(--gutter) pt-8 pb-6">
+      <div className="flex items-end justify-between gap-6 px-(--gutter) pt-8 pb-6 max-md:pt-(--title-top)">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-6 w-36" />
           <Skeleton className="h-4 w-56" />

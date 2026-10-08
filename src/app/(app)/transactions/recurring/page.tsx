@@ -43,6 +43,7 @@ async function renderRecurring(user: CurrentUser) {
         title="Transactions"
         description="Rules create entries on their dates, automatically."
         actions={<NewRuleButton />}
+        mobileActions={<NewRuleButton variant="glass" />}
         className="pb-4"
       />
       <TransactionsTabs current="recurring" />
