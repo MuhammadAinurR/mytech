@@ -25,6 +25,52 @@ const statusToast: Record<InvoiceStatus, string> = {
   paid: 'Marked as paid',
 }
 
+/** Moves an invoice between draft, sent, and paid, with the result as a toast. */
+export function useInvoiceMove(id: string) {
+  const [pending, startTransition] = useTransition()
+  function move(next: InvoiceStatus) {
+    startTransition(async () => {
+      const result = await setInvoiceStatusAction(id, next)
+      if (result.ok) toast.success(statusToast[next])
+      else toast.error('That change isn’t possible from the current status.')
+    })
+  }
+  return { pending, move }
+}
+
+/** Confirms, then deletes a draft and returns to the list. */
+export function DeleteDraftDialog({
+  id,
+  label,
+  open,
+  onOpenChange,
+}: {
+  id: string
+  label: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const router = useRouter()
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete draft ${label}?`}
+      description="The number stays used, so the next invoice keeps counting up."
+      confirmLabel="Delete draft"
+      onConfirm={async () => {
+        const result = await deleteInvoiceAction(id)
+        if (result.ok) {
+          toast.success('Draft deleted')
+          router.push('/invoices')
+        } else {
+          toast.error('Only drafts can be deleted.')
+        }
+      }}
+    />
+  )
+}
+
 /** The one primary action follows the invoice's status; everything else is secondary. */
 export function InvoiceActions({
   id,
@@ -35,17 +81,8 @@ export function InvoiceActions({
   status: InvoiceStatus
   label: string
 }) {
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
+  const { pending, move } = useInvoiceMove(id)
   const [confirmDelete, setConfirmDelete] = useState(false)
-
-  function move(next: InvoiceStatus) {
-    startTransition(async () => {
-      const result = await setInvoiceStatusAction(id, next)
-      if (result.ok) toast.success(statusToast[next])
-      else toast.error('That change isn’t possible from the current status.')
-    })
-  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -110,21 +147,11 @@ export function InvoiceActions({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <ConfirmDialog
+      <DeleteDraftDialog
+        id={id}
+        label={label}
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={`Delete draft ${label}?`}
-        description="The number stays used, so the next invoice keeps counting up."
-        confirmLabel="Delete draft"
-        onConfirm={async () => {
-          const result = await deleteInvoiceAction(id)
-          if (result.ok) {
-            toast.success('Draft deleted')
-            router.push('/invoices')
-          } else {
-            toast.error('Only drafts can be deleted.')
-          }
-        }}
       />
     </div>
   )

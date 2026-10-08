@@ -110,6 +110,54 @@ test('transactions on a phone: grouped by day, a row menu, and delete from the s
   await expect(today.getByRole('button', { name: new RegExp(name) })).toHaveCount(1)
 })
 
+test('invoices on a phone: save from the title bar, step the status, act from the menu', async ({
+  page,
+}) => {
+  const stamp = Date.now()
+  const companyName = `Phone Co ${stamp}`
+  const client = `Phone Client ${stamp}`
+  await page.goto('/companies?new=1')
+  const companyDialog = page.getByRole('dialog', { name: 'New company' })
+  await companyDialog.getByLabel('Name').fill(companyName)
+  await companyDialog.getByLabel('Number prefix').fill(`P${String(stamp).slice(-6)}-`)
+  await companyDialog.getByRole('button', { name: 'Add company' }).click()
+  await expect(page.getByText('Company added')).toBeVisible()
+
+  // The form's own footer is hidden on phones; the glass check saves.
+  await page.goto('/invoices/new')
+  await page.getByLabel('Company').selectOption({ label: companyName })
+  await page.getByLabel('Client name').fill(client)
+  await page.getByLabel('Line 1 description').fill('Discovery')
+  await page.getByLabel('Line 1 unit price').fill('400')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}$/)
+  const invoiceUrl = page.url()
+
+  // The next step is one full-width tap; the rest sits behind "…".
+  await page.getByRole('button', { name: 'Invoice actions' }).click()
+  for (const item of ['Print', 'Download PDF', 'Edit', 'Mark as paid', 'Delete draft']) {
+    await expect(page.getByRole('menuitem', { name: item })).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Mark as sent' }).click()
+  await expect(page.getByText('Marked as sent')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mark as paid' })).toBeVisible()
+  await page.getByRole('button', { name: 'Invoice actions' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Move back to draft' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu')).toBeHidden()
+
+  const results = await new AxeBuilder({ page }).analyze()
+  expect(results.violations.map((v) => `${v.id} (${v.impact})`)).toEqual([])
+
+  // The list is rows, not a table, and a row opens the invoice.
+  await page.goto('/invoices')
+  await expect(page.getByRole('table')).toBeHidden()
+  await page.getByRole('link', { name: new RegExp(client) }).click()
+  await expect(page).toHaveURL(invoiceUrl)
+})
+
 test('the large title collapses into the title bar on scroll', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 480 })
   await page.goto('/more')
@@ -125,12 +173,16 @@ test('the mobile shell has no accessibility violations', async ({ page }) => {
     '/transactions',
     '/transactions/recurring',
     '/transactions/renewals',
+    '/invoices',
+    '/invoices/new',
     '/more',
     '/companies',
     '/settings',
   ]) {
     await page.goto(path)
     await expect(tabs(page)).toBeVisible()
+    // Scan the page, not the skeleton it streams into.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     const results = await new AxeBuilder({ page }).analyze()
     expect(
       results.violations.map((v) => `${path}: ${v.id} (${v.impact})`),

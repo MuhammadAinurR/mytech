@@ -19,6 +19,9 @@ export type CompanyOption = {
 
 export const EMPTY_LINE = { description: '', quantity: '1', unitPrice: '' }
 
+/** The editor form's id, for the mobile title bar's Save button (outside the form). */
+export const INVOICE_EDITOR_FORM = 'invoice-editor'
+
 /** The editor's "Bill to" fields for a saved client, or blank ones. */
 export function billTo(client: ClientOption | undefined) {
   return {
