@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /** Generic list-page skeleton: header, toolbar, and table rows. */
 export function PageSkeleton({ rows = 8 }: { rows?: number }) {
   return (
-    <div aria-busy="true" aria-label="Loading">
+    <div role="status" aria-busy="true" aria-label="Loading">
       <div className="flex items-end justify-between gap-6 px-(--gutter) pt-8 pb-6 max-md:pt-(--title-top)">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-6 w-40" />
