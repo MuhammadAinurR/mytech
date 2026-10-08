@@ -36,7 +36,7 @@ async function renderCompanies(user: CurrentUser) {
         mobileActions={<AddCompanyButton variant="glass" />}
       />
       {companies.length > 0 ? (
-        <div className="border-t border-border pt-2 md:border-t-0">
+        <div className="md:pt-2">
           <CompaniesTable companies={companies} />
         </div>
       ) : (

@@ -102,15 +102,20 @@ async function renderCompany(user: CurrentUser, id: string) {
           }
         />
 
-        <section aria-labelledby="clients-heading" className="border-t border-border">
+        <section
+          data-grouped
+          aria-labelledby="clients-heading"
+          className="border-t border-border max-md:border-t-0"
+        >
           <div className="flex items-end justify-between gap-4 px-(--gutter) pt-6 pb-4">
             <div className="flex flex-col gap-1">
               <h2 id="clients-heading" className="text-md font-semibold">
                 Clients
               </h2>
-              {/* The empty state explains this on its own. */}
+              {/* The empty state explains this on its own; phones say it
+                  under the list. */}
               {clients.length > 0 ? (
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted max-md:hidden">
                   Pick one on a new invoice and its details fill in for you.
                 </p>
               ) : null}
@@ -118,12 +123,12 @@ async function renderCompany(user: CurrentUser, id: string) {
             {clients.length > 0 ? <AddClientButton /> : null}
           </div>
           {clients.length > 0 ? (
-            <div className="border-t border-border pt-2 md:border-t-0">
+            <div className="pb-6 md:pt-2 md:pb-0">
               <ClientsTable clients={clients} />
             </div>
           ) : (
             <EmptyState
-              className="border-t border-border"
+              className="border-t border-border max-md:mx-4 max-md:rounded-lg max-md:border-t-0 max-md:bg-surface"
               icon={<Users />}
               title="No saved clients yet"
               description={`Save the clients you bill from ${company.name}, then pick them on new invoices instead of typing their details.`}

@@ -88,6 +88,7 @@ export function SecretCell({ credentialId, label }: { credentialId: string; labe
               <Button
                 size="icon-sm"
                 variant="ghost"
+                className="max-md:size-10"
                 onClick={reveal}
                 aria-label={
                   secret === null ? `Reveal secret for ${label}` : `Hide secret for ${label}`
@@ -103,6 +104,7 @@ export function SecretCell({ credentialId, label }: { credentialId: string; labe
           <Button
             size="icon-sm"
             variant="ghost"
+            className="max-md:size-10"
             onClick={copy}
             aria-label={`Copy secret for ${label}`}
           >
