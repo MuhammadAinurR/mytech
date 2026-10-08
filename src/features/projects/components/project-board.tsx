@@ -5,11 +5,13 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDroppable,
   useSensor,
   useSensors,
   type Announcements,
+  type CollisionDetection,
   type DragEndEvent,
   type KeyboardCoordinateGetter,
   type DragOverEvent,
@@ -35,6 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { SegmentedControl } from '@/components/ui/segmented'
 import { toast } from '@/components/ui/toaster'
 import { addDays } from '@/lib/dates'
 import { cn } from '@/lib/utils'
@@ -42,21 +45,52 @@ import type { ProjectItem } from '@/server/queries/projects'
 
 import { deleteProjectAction, moveProjectAction } from '../actions'
 import { applyMove, findColumn, formatDateRange, groupByStatus, type Columns } from '../lib/board'
+import { projectProgress } from '../lib/progress'
 import { PROJECT_STATUS_LABELS, PROJECT_STATUSES, type ProjectStatus } from '../schema'
 import { DatesDialog } from './dates-dialog'
+import { ProgressLabel, ProgressTrack } from './progress-track'
 import { useProjectDialog } from './project-dialog'
 
 type Board = Columns<ProjectItem>
-type PendingMove = { id: string; name: string; to: ProjectStatus; index: number; previous: Board }
+type PendingMove = {
+  id: string
+  name: string
+  to: ProjectStatus
+  index: number
+  previous: Board
+  notice?: string
+}
 
 const isColumn = (id: unknown): id is ProjectStatus =>
   PROJECT_STATUSES.includes(id as ProjectStatus)
 
 /**
- * Kanban board. Drag with a pointer anywhere on a card, or from the keyboard
+ * Phones show one column at a time; the hidden ones measure as zero-size
+ * boxes at the corner of the screen. Only visible targets can take a drop.
+ */
+const visibleCollisions: CollisionDetection = (args) =>
+  closestCorners({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((container) => {
+      const rect = args.droppableRects.get(container.id)
+      return rect !== undefined && rect.width > 0
+    }),
+  })
+
+const EMPTY_ON_PHONE: Record<ProjectStatus, string> = {
+  todo: 'Nothing to do yet.',
+  ongoing: 'Nothing in progress.',
+  done: 'Nothing finished yet.',
+}
+
+/**
+ * Kanban board. Drag with a mouse anywhere on a card, or from the keyboard
  * via the card's handle (Space/Enter to lift, arrows to move, Space/Enter to
  * drop, Escape to cancel). Every card also has a "Move to" menu, so changing
  * status never requires dragging. Moves are optimistic and roll back on error.
+ *
+ * Phones show one column at a time behind a segmented switch; a long press
+ * lifts a card to reorder it, and its menu moves it to another column.
  */
 export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; today: string }) {
   const [columns, setColumns] = useState<Board>(() => groupByStatus(projects))
@@ -64,6 +98,7 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
   const [activeId, setActiveId] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingMove | null>(null)
   const [saving, startTransition] = useTransition()
+  const [shown, setShown] = useState<ProjectStatus>('ongoing')
   if (source !== projects && activeId === null && pending === null && !saving) {
     // Fresh server data (after an action or a background refresh) replaces
     // local state, but never while a move is in progress: mid-drag, waiting
@@ -106,7 +141,10 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
   }, [])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    // A mouse lifts after a few pixels; a finger after a long press, so a
+    // swipe over the cards still scrolls the page.
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter }),
   )
 
@@ -120,6 +158,7 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
     index: number,
     previous: Board,
     dates?: { startDate: string; endDate: string },
+    notice?: string,
   ) {
     const card = byId(id)
     const from = findColumn(previous, id)
@@ -127,7 +166,7 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
     if (from === to && fromIndex === index && !dates) return
 
     if (to === 'ongoing' && !dates && (!card?.startDate || !card?.endDate)) {
-      setPending({ id, name: card?.name ?? 'Project', to, index, previous })
+      setPending({ id, name: card?.name ?? 'Project', to, index, previous, notice })
       return
     }
 
@@ -140,6 +179,8 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
             ? 'That project no longer exists.'
             : 'That move didn’t save.',
         )
+      } else if (notice) {
+        toast.success(notice)
       }
     })
   }
@@ -148,12 +189,15 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
     const previous = columns
     const index = columns[to].length
     setColumns(applyMove(columns, id, to, index))
-    persist(id, to, index, previous)
+    // On a phone the card leaves the column on screen, so say where it went.
+    persist(id, to, index, previous, undefined, `Moved to ${PROJECT_STATUS_LABELS[to]}`)
   }
 
-  function onDragStart({ active }: DragStartEvent) {
+  function onDragStart({ active, activatorEvent }: DragStartEvent) {
     before.current = columns
     setActiveId(String(active.id))
+    // A tick when a long press lifts the card (Android; iOS has no vibrate).
+    if ('touches' in activatorEvent && 'vibrate' in navigator) navigator.vibrate(8)
   }
 
   function onDragOver({ active, over }: DragOverEvent) {
@@ -211,14 +255,12 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
   }
 
   const activeCard = activeId ? byId(activeId) : undefined
-  const year = today.slice(0, 4)
-
   return (
     <>
       <DndContext
         id={dndId}
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={visibleCollisions}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
@@ -235,12 +277,31 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
           },
         }}
       >
-        <div className="grid gap-4 px-(--gutter) pb-10 md:grid-cols-3">
+        <div className="px-4 pb-4 md:hidden">
+          <SegmentedControl
+            label="Column"
+            value={shown}
+            onValueChange={setShown}
+            className="grid w-full auto-cols-fr grid-flow-col"
+            itemClassName="h-8 justify-center"
+            options={PROJECT_STATUSES.map((status) => ({
+              value: status,
+              label: (
+                <>
+                  {PROJECT_STATUS_LABELS[status]}{' '}
+                  <span className="tabular text-subtle">{columns[status].length}</span>
+                </>
+              ),
+            }))}
+          />
+        </div>
+        <div data-grouped className="grid gap-4 px-(--gutter) pb-10 max-md:px-4 md:grid-cols-3">
           {PROJECT_STATUSES.map((status) => (
             <Column
               key={status}
               status={status}
               count={columns[status].length}
+              shownOnPhone={status === shown}
               onAdd={() => openCreate(status)}
             >
               <SortableContext
@@ -251,7 +312,7 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
                   <SortableCard
                     key={project.id}
                     project={project}
-                    year={year}
+                    today={today}
                     onEdit={() => openEdit(project)}
                     onMove={(to) => moveTo(project.id, to)}
                     onDelete={() => setDeleting(project)}
@@ -263,7 +324,11 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
         </div>
         <DragOverlay dropAnimation={{ duration: 160, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
           {activeCard ? (
-            <CardBody project={activeCard} year={year} className="shadow-drag" />
+            <CardBody
+              project={activeCard}
+              today={today}
+              className="shadow-drag max-md:scale-[1.02]"
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -282,7 +347,7 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
             ...current,
             ongoing: current.ongoing.map((p) => (p.id === pending.id ? { ...p, ...dates } : p)),
           }))
-          persist(pending.id, pending.to, pending.index, pending.previous, dates)
+          persist(pending.id, pending.to, pending.index, pending.previous, dates, pending.notice)
           setPending(null)
         }}
       />
@@ -306,18 +371,24 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
 function Column({
   status,
   count,
+  shownOnPhone,
   onAdd,
   children,
 }: {
   status: ProjectStatus
   count: number
+  shownOnPhone: boolean
   onAdd: () => void
   children: React.ReactNode
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   return (
-    <section aria-labelledby={`column-${status}`} className="flex min-w-0 flex-col gap-2">
-      <header className="flex h-8 items-center justify-between pl-1">
+    <section
+      aria-labelledby={`column-${status}`}
+      className={cn('flex min-w-0 flex-col gap-2', !shownOnPhone && 'max-md:hidden')}
+    >
+      {/* Phones name the column in the segmented switch instead. */}
+      <header className="flex h-8 items-center justify-between pl-1 max-md:hidden">
         <h2 id={`column-${status}`} className="flex items-center gap-2 text-sm font-medium">
           {PROJECT_STATUS_LABELS[status]}
           <span className="tabular text-subtle">{count}</span>
@@ -337,13 +408,23 @@ function Column({
         className={cn(
           'flex min-h-32 flex-col gap-2 rounded-md bg-background p-2 transition-colors duration-150',
           isOver && 'bg-fill',
+          'max-md:min-h-0 max-md:gap-2.5 max-md:bg-transparent max-md:p-0',
         )}
       >
         {children}
         {count === 0 ? (
-          <p className="flex flex-1 items-center justify-center px-3 py-6 text-center text-sm text-subtle">
-            {status === 'ongoing' ? 'Drag a project here to start it.' : 'Nothing here yet.'}
-          </p>
+          <>
+            <p className="flex flex-1 items-center justify-center px-3 py-6 text-center text-sm text-subtle max-md:hidden">
+              {status === 'ongoing' ? 'Drag a project here to start it.' : 'Nothing here yet.'}
+            </p>
+            <div className="flex flex-col items-center gap-3 rounded-lg bg-surface px-6 py-10 text-center md:hidden">
+              <p className="text-md text-muted">{EMPTY_ON_PHONE[status]}</p>
+              <Button size="md" onClick={onAdd}>
+                <Plus />
+                New project
+              </Button>
+            </div>
+          </>
         ) : null}
       </div>
     </section>
@@ -352,13 +433,13 @@ function Column({
 
 function SortableCard({
   project,
-  year,
+  today,
   onEdit,
   onMove,
   onDelete,
 }: {
   project: ProjectItem
-  year: string
+  today: string
   onEdit: () => void
   onMove: (to: ProjectStatus) => void
   onDelete: () => void
@@ -372,8 +453,9 @@ function SortableCard({
     transition,
     isDragging,
   } = useSortable({ id: project.id })
-  const { onPointerDown, onKeyDown } = (listeners ?? {}) as {
-    onPointerDown?: React.PointerEventHandler
+  const { onMouseDown, onTouchStart, onKeyDown } = (listeners ?? {}) as {
+    onMouseDown?: React.MouseEventHandler
+    onTouchStart?: React.TouchEventHandler
     onKeyDown?: React.KeyboardEventHandler
   }
 
@@ -381,12 +463,17 @@ function SortableCard({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      onPointerDown={onPointerDown}
-      className={cn('touch-manipulation', isDragging && 'opacity-40')}
+      onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
+      // No text selection or callout from the long press that lifts a card.
+      className={cn(
+        'touch-manipulation max-md:select-none max-md:[-webkit-touch-callout:none]',
+        isDragging && 'opacity-40',
+      )}
     >
       <CardBody
         project={project}
-        year={year}
+        today={today}
         handle={
           <button
             type="button"
@@ -394,7 +481,7 @@ function SortableCard({
             {...attributes}
             onKeyDown={onKeyDown}
             aria-label={`Move ${project.name}`}
-            className="inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-xs text-subtle opacity-0 transition-opacity duration-150 group-hover/card:opacity-100 focus-visible:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100"
+            className="inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-xs text-subtle opacity-0 transition-opacity duration-150 group-hover/card:opacity-100 focus-visible:opacity-100 active:cursor-grabbing max-md:hidden pointer-coarse:opacity-100"
           >
             <GripVertical className="size-4" />
           </button>
@@ -448,28 +535,35 @@ function SortableCard({
 
 function CardBody({
   project,
-  year,
+  today,
   handle,
   title,
   menu,
   className,
 }: {
   project: ProjectItem
-  year: string
+  today: string
   handle?: React.ReactNode
   title?: React.ReactNode
   menu?: React.ReactNode
   className?: string
 }) {
+  const year = today.slice(0, 4)
+  // Phones show how far through its dates an ongoing project is.
+  const progress =
+    project.status === 'ongoing' && project.startDate && project.endDate
+      ? projectProgress(project.startDate, project.endDate, today)
+      : null
   return (
     <article
       className={cn(
         'group/card flex flex-col gap-1.5 rounded-sm border border-border bg-surface p-3 text-sm transition-colors duration-150 hover:border-border-strong',
+        'max-md:gap-1 max-md:rounded-lg max-md:border-0 max-md:p-4',
         className,
       )}
     >
       <div className="flex items-start gap-1">
-        <div className="min-w-0 flex-1 pt-0.5">
+        <div className="min-w-0 flex-1 pt-0.5 max-md:text-md">
           {title ?? <span className="font-medium">{project.name}</span>}
         </div>
         <div className="-mt-1 -mr-1 flex items-center">
@@ -478,17 +572,24 @@ function CardBody({
         </div>
       </div>
       {project.startDate && project.endDate ? (
-        <p className="tabular text-xs text-muted">
+        <p className="tabular text-xs text-muted max-md:text-sm">
           {formatDateRange(project.startDate, project.endDate, year)}
+          {progress ? (
+            <span className="md:hidden">
+              {' · '}
+              <ProgressLabel progress={progress} />
+            </span>
+          ) : null}
         </p>
       ) : project.startDate ? (
-        <p className="tabular text-xs text-muted">
+        <p className="tabular text-xs text-muted max-md:text-sm">
           From {formatDateRange(project.startDate, project.startDate, year)}
         </p>
       ) : null}
       {project.description ? (
-        <p className="line-clamp-2 text-xs text-muted">{project.description}</p>
+        <p className="line-clamp-2 text-xs text-muted max-md:text-sm">{project.description}</p>
       ) : null}
+      {progress ? <ProgressTrack progress={progress} className="mt-2.5 md:hidden" /> : null}
     </article>
   )
 }

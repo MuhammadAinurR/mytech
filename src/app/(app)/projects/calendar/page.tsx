@@ -10,7 +10,10 @@ import {
   NewProjectButton,
   ProjectDialogProvider,
 } from '@/features/projects/components/project-dialog'
-import { ProjectsViewSwitch } from '@/features/projects/components/projects-view-switch'
+import {
+  ProjectsViewButton,
+  ProjectsViewSwitch,
+} from '@/features/projects/components/projects-view-switch'
 import { monthWeeks } from '@/features/projects/lib/calendar'
 import { todayInTimeZone } from '@/lib/dates'
 import { currentMonth, formatMonth } from '@/lib/months'
@@ -52,12 +55,13 @@ async function renderCalendar(user: CurrentUser, month: string) {
             <NewProjectButton />
           </>
         }
-        mobileActions={<NewProjectButton variant="glass" />}
+        mobileActions={
+          <>
+            <ProjectsViewButton current="calendar" />
+            <NewProjectButton variant="glass" />
+          </>
+        }
       />
-      {/* On mobile the view switch sits under the title instead of in the bar. */}
-      <div className="px-(--gutter) pb-4 md:hidden">
-        <ProjectsViewSwitch current="calendar" />
-      </div>
       <div className="px-(--gutter) pb-4">
         <MonthNav
           month={month}

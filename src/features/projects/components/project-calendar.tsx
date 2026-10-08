@@ -2,11 +2,14 @@
 
 import { formatDateOnly } from '@/lib/dates'
 import { cn } from '@/lib/utils'
+import { InsetButtonRow, InsetSection } from '@/components/ui/inset-list'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/tooltip'
 import type { ProjectItem } from '@/server/queries/projects'
 
 import { formatDateRange } from '../lib/board'
 import { layoutWeek, monthWeeks, type CalendarProject } from '../lib/calendar'
+import { projectProgress } from '../lib/progress'
+import { ProgressLabel, ProgressTrack } from './progress-track'
 import { useProjectDialog } from './project-dialog'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -106,25 +109,31 @@ export function ProjectCalendar({
         </div>
       </div>
 
-      <ol
-        className="flex flex-col border-t border-border md:hidden"
-        aria-label="Ongoing projects this month"
-      >
-        {dated.map((project) => (
-          <li key={project.id} className="border-b border-border">
-            <button
-              type="button"
-              onClick={() => openEdit(project)}
-              className="flex w-full cursor-pointer flex-col gap-0.5 px-(--gutter) py-3 text-left hover:bg-fill/60"
-            >
-              <span className="text-sm font-medium">{project.name}</span>
-              <span className="tabular text-xs text-muted">
-                {formatDateRange(project.startDate, project.endDate, year)}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ol>
+      {/* Phones: an agenda, each project with how far through its dates it is. */}
+      <div data-grouped className="pb-10 md:hidden">
+        <InsetSection title="Ongoing this month">
+          {dated.map((project) => {
+            const progress = projectProgress(project.startDate, project.endDate, today)
+            return (
+              <InsetButtonRow
+                key={project.id}
+                onClick={() => openEdit(project)}
+                title={project.name}
+                subtitle={
+                  <>
+                    <span className="tabular">
+                      {formatDateRange(project.startDate, project.endDate, year)}
+                    </span>
+                    {' · '}
+                    <ProgressLabel progress={progress} />
+                  </>
+                }
+                detail={<ProgressTrack progress={progress} />}
+              />
+            )
+          })}
+        </InsetSection>
+      </div>
     </>
   )
 }

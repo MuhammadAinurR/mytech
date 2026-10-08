@@ -8,7 +8,10 @@ import {
   NewProjectButton,
   ProjectDialogProvider,
 } from '@/features/projects/components/project-dialog'
-import { ProjectsViewSwitch } from '@/features/projects/components/projects-view-switch'
+import {
+  ProjectsViewButton,
+  ProjectsViewSwitch,
+} from '@/features/projects/components/projects-view-switch'
 import { todayInTimeZone } from '@/lib/dates'
 import { requireUser } from '@/server/auth/session'
 import { listProjects } from '@/server/queries/projects'
@@ -37,12 +40,13 @@ async function renderProjects(user: CurrentUser) {
             <NewProjectButton />
           </>
         }
-        mobileActions={<NewProjectButton variant="glass" />}
+        mobileActions={
+          <>
+            <ProjectsViewButton current="board" />
+            <NewProjectButton variant="glass" />
+          </>
+        }
       />
-      {/* On mobile the view switch sits under the title instead of in the bar. */}
-      <div className="px-(--gutter) pb-4 md:hidden">
-        <ProjectsViewSwitch current="board" />
-      </div>
       <ProjectBoard projects={projects} today={todayInTimeZone(user.timezone)} />
     </ProjectDialogProvider>
   )
