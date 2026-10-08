@@ -74,8 +74,8 @@ async function renderInvoices(user: CurrentUser, query: InvoiceListQuery) {
       />
 
       {receivables.length > 0 ? (
-        <div className="px-(--gutter) pb-6">
-          <dl className="flex flex-wrap gap-x-10 gap-y-3 border-y border-border py-4">
+        <div data-grouped className="px-(--gutter) pb-6 max-md:px-4">
+          <dl className="flex flex-wrap gap-x-10 gap-y-3 border-y border-border py-4 max-md:rounded-lg max-md:border-y-0 max-md:bg-surface max-md:px-4">
             {receivables.map((row) => (
               <Fragment key={row.currency}>
                 <div>

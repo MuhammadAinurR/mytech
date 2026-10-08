@@ -6,6 +6,10 @@ import { PageSkeleton } from '@/components/page-skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { InvoiceActions } from '@/features/invoices/components/invoice-actions'
 import { InvoiceDocument } from '@/features/invoices/components/invoice-document'
+import {
+  InvoiceMobileMenu,
+  InvoicePrimaryAction,
+} from '@/features/invoices/components/invoice-mobile-actions'
 import { InvoiceStatusDot } from '@/features/invoices/components/invoice-status'
 import { formatDateTime, todayInTimeZone } from '@/lib/dates'
 import { uuidSchema } from '@/lib/validation'
@@ -59,7 +63,11 @@ async function renderInvoice(user: CurrentUser, id: string) {
         actions={
           <InvoiceActions id={invoice.id} status={invoice.status} label={invoice.numberLabel} />
         }
+        mobileActions={
+          <InvoiceMobileMenu id={invoice.id} status={invoice.status} label={invoice.numberLabel} />
+        }
       />
+      <InvoicePrimaryAction id={invoice.id} status={invoice.status} />
       <div className="border-t border-border bg-background px-0 py-0 sm:px-(--gutter) sm:py-10">
         <InvoiceDocument
           invoice={invoice}

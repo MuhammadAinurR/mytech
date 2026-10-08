@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useTransition } from 'react'
+import { useRef, useTransition } from 'react'
 import { Controller, useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,13 @@ import { CURRENCIES, formatMoney, parseMoneyInput } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 import { createInvoiceAction, updateInvoiceAction } from '../actions'
-import { billTo, type CompanyOption, EMPTY_LINE, findClientByName } from '../editor-shared'
+import {
+  billTo,
+  type CompanyOption,
+  EMPTY_LINE,
+  findClientByName,
+  INVOICE_EDITOR_FORM,
+} from '../editor-shared'
 import { computeTotals, formatPercent, parsePercent, parseQuantity } from '../lib/totals'
 import { invoiceFormSchema, type InvoiceFormValues } from '../schema'
 
@@ -64,36 +70,46 @@ export function InvoiceEditor({
     }
   }
 
-  const onSubmit = form.handleSubmit((values) =>
+  // The phone's Save sits in the title bar, outside the form, without a
+  // loading state of its own: ignore taps while a save is in flight.
+  const saving = useRef(false)
+  const save = (values: InvoiceFormValues) => {
+    if (saving.current) return
+    saving.current = true
     startTransition(async () => {
-      const submitted = { ...values, saveClient: Boolean(values.saveClient) && canSaveClient }
-      const result = invoiceId
-        ? await updateInvoiceAction(invoiceId, submitted)
-        : await createInvoiceAction(submitted)
-      if (result.ok) {
-        toast.success(invoiceId ? 'Invoice updated' : 'Invoice saved as draft', {
-          description:
-            result.data.savedClient && selectedCompany
-              ? `${values.clientName.trim()} is saved to ${selectedCompany.name}’s clients.`
-              : undefined,
-        })
-        router.push(`/invoices/${'id' in result.data ? result.data.id : invoiceId}`)
-        return
+      try {
+        const submitted = { ...values, saveClient: Boolean(values.saveClient) && canSaveClient }
+        const result = invoiceId
+          ? await updateInvoiceAction(invoiceId, submitted)
+          : await createInvoiceAction(submitted)
+        if (result.ok) {
+          toast.success(invoiceId ? 'Invoice updated' : 'Invoice saved as draft', {
+            description:
+              result.data.savedClient && selectedCompany
+                ? `${values.clientName.trim()} is saved to ${selectedCompany.name}’s clients.`
+                : undefined,
+          })
+          router.push(`/invoices/${'id' in result.data ? result.data.id : invoiceId}`)
+          return
+        }
+        if (result.error === 'not_editable') {
+          toast.error('Only drafts can be edited. Move it back to draft first.')
+        } else if (result.error === 'not_found') {
+          toast.error('That invoice no longer exists.')
+        } else if (result.error === 'number_taken') {
+          toast.error('That invoice number is already used. Raise the company’s next number.')
+        } else if (!applyFieldErrors(form.setError, result.fieldErrors)) {
+          toast.error('The invoice wasn’t saved. Try again.')
+        }
+      } finally {
+        saving.current = false
       }
-      if (result.error === 'not_editable') {
-        toast.error('Only drafts can be edited. Move it back to draft first.')
-      } else if (result.error === 'not_found') {
-        toast.error('That invoice no longer exists.')
-      } else if (result.error === 'number_taken') {
-        toast.error('That invoice number is already used. Raise the company’s next number.')
-      } else if (!applyFieldErrors(form.setError, result.fieldErrors)) {
-        toast.error('The invoice wasn’t saved. Try again.')
-      }
-    }),
-  )
+    })
+  }
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => form.handleSubmit(save)(event)
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col">
+    <form id={INVOICE_EDITOR_FORM} onSubmit={onSubmit} noValidate className="flex flex-col">
       <Section title="From">
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_8rem]">
           <Field
@@ -347,7 +363,8 @@ export function InvoiceEditor({
         </div>
       </Section>
 
-      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-surface px-(--gutter) py-3">
+      {/* Phones save from the title bar instead; this bar would sit under the tab bar. */}
+      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-surface px-(--gutter) py-3 max-md:hidden">
         <Button asChild variant="secondary">
           <Link href={invoiceId ? `/invoices/${invoiceId}` : '/invoices'}>Cancel</Link>
         </Button>
