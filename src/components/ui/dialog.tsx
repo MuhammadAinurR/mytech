@@ -19,12 +19,35 @@ const widths = {
 
 export const overlayClasses = cn(
   'fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-scrim p-4',
+  // Mobile: a bottom sheet, 8px from the edges, clear of the status bar and
+  // home indicator. A column with mt-auto (not end alignment) so a tall sheet
+  // still scrolls from its top.
+  'max-md:flex max-md:flex-col max-md:px-2 max-md:pt-[calc(env(safe-area-inset-top)+1.5rem)] max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))]',
   'data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in',
 )
 
 export const dialogSurfaceClasses = cn(
   'relative w-full rounded-lg bg-surface-raised text-fg shadow-dialog outline-none',
   'data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in',
+  // Mobile (DESIGN.md → Mobile): a thick-glass sheet that rises from the bottom.
+  'max-md:glass max-md:mt-auto max-md:max-w-none max-md:rounded-xl max-md:glass-thick',
+  'max-md:data-[state=closed]:animate-sheet-out max-md:data-[state=open]:animate-sheet-in',
+)
+
+/** The sheet's grabber (mobile only); tapping outside or Close dismisses it. */
+export function SheetGrabber() {
+  return (
+    <span
+      aria-hidden
+      className="mx-auto mt-2 block h-1.5 w-9 rounded-full bg-border-strong md:hidden"
+    />
+  )
+}
+
+const closeClasses = cn(
+  'absolute top-4 right-4 inline-flex size-7 cursor-pointer items-center justify-center rounded-sm text-subtle transition-colors hover:bg-fill hover:text-fg',
+  // Mobile: a round button with a 44px hit area.
+  'max-md:top-3 max-md:right-3 max-md:size-9 max-md:rounded-full max-md:bg-fill max-md:text-muted max-md:after:absolute max-md:after:-inset-1',
 )
 
 export function DialogContent({
@@ -44,12 +67,10 @@ export function DialogContent({
           className={cn(dialogSurfaceClasses, widths[size], className)}
           {...props}
         >
+          <SheetGrabber />
           {children}
           {hideClose ? null : (
-            <DialogPrimitive.Close
-              className="absolute top-4 right-4 inline-flex size-7 cursor-pointer items-center justify-center rounded-sm text-subtle transition-colors hover:bg-fill hover:text-fg"
-              aria-label="Close"
-            >
+            <DialogPrimitive.Close className={closeClasses} aria-label="Close">
               <X className="size-4" />
             </DialogPrimitive.Close>
           )}
@@ -69,7 +90,7 @@ export function DialogHeader({
   className?: string
 }) {
   return (
-    <div className={cn('flex flex-col gap-1 px-6 pt-5 pr-14', className)}>
+    <div className={cn('flex flex-col gap-1 px-6 pt-5 pr-14 max-md:px-5 max-md:pt-3', className)}>
       <DialogPrimitive.Title className="text-md font-semibold">{title}</DialogPrimitive.Title>
       {description ? (
         <DialogPrimitive.Description className="text-sm text-muted">
@@ -83,14 +104,14 @@ export function DialogHeader({
 }
 
 export function DialogBody({ className, ...props }: ComponentProps<'div'>) {
-  return <div className={cn('px-6 py-5', className)} {...props} />
+  return <div className={cn('px-6 py-5 max-md:px-5', className)} {...props} />
 }
 
 export function DialogFooter({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex flex-col-reverse gap-2 border-t border-border px-6 py-4 sm:flex-row sm:justify-end',
+        'flex flex-col-reverse gap-2 border-t border-border px-6 py-4 max-md:px-5 max-md:pb-5 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
