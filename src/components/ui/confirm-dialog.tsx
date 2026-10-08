@@ -6,7 +6,7 @@ import { useState, useTransition, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 import { Button } from './button'
-import { dialogSurfaceClasses, overlayClasses } from './dialog'
+import { dialogSurfaceClasses, overlayClasses, SheetGrabber } from './dialog'
 
 /**
  * Confirmation for destructive or irreversible actions. Focus starts on Cancel
@@ -42,13 +42,14 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={overlayClasses}>
           <AlertDialog.Content className={cn(dialogSurfaceClasses, 'max-w-sm')}>
-            <div className="flex flex-col gap-1.5 px-6 pt-5 pb-5">
+            <SheetGrabber />
+            <div className="flex flex-col gap-1.5 px-6 pt-5 pb-5 max-md:px-5 max-md:pt-3">
               <AlertDialog.Title className="text-md font-semibold">{title}</AlertDialog.Title>
               <AlertDialog.Description className="text-sm text-muted">
                 {description}
               </AlertDialog.Description>
             </div>
-            <div className="flex flex-col-reverse gap-2 border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 border-t border-border px-6 py-4 max-md:px-5 max-md:pb-5 sm:flex-row sm:justify-end">
               <AlertDialog.Cancel asChild>
                 <Button variant="secondary">Cancel</Button>
               </AlertDialog.Cancel>

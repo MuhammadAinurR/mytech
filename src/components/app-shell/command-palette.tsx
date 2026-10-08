@@ -61,11 +61,18 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
           <DialogPrimitive.Overlay
             className={cn(
               'fixed inset-0 z-50 overflow-y-auto bg-scrim px-4 pt-16 sm:pt-32',
+              // Mobile: under the status bar, like Spotlight.
+              'max-md:px-2 max-md:pt-[calc(env(safe-area-inset-top)+0.5rem)]',
               'data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in',
             )}
           >
             <DialogPrimitive.Content
-              className={cn(dialogSurfaceClasses, 'mx-auto max-w-xl overflow-hidden')}
+              className={cn(
+                dialogSurfaceClasses,
+                'mx-auto max-w-xl overflow-hidden',
+                // A card that drops from the top on mobile, not a bottom sheet.
+                'max-md:mt-0 max-md:data-[state=closed]:animate-dialog-out max-md:data-[state=open]:animate-dialog-in',
+              )}
               aria-describedby={undefined}
             >
               <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
@@ -77,7 +84,9 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                     placeholder="Search or jump to…"
                     className="h-12 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-subtle"
                   />
-                  <Kbd>Esc</Kbd>
+                  <span className="max-md:hidden">
+                    <Kbd>Esc</Kbd>
+                  </span>
                 </div>
                 <Command.List className="max-h-[min(24rem,60vh)] overflow-y-auto p-2">
                   <Command.Empty className="px-3 py-8 text-center text-sm text-muted">
@@ -173,6 +182,7 @@ function PaletteItem({
       className={cn(
         'group flex h-9 cursor-pointer items-center gap-2.5 rounded-sm px-2 text-sm text-fg select-none',
         'data-[selected=true]:bg-fill [&_svg]:size-4 [&_svg]:text-muted',
+        'max-md:h-11 max-md:rounded-md max-md:px-3 max-md:text-md',
       )}
     >
       {icon}

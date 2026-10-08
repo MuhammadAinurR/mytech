@@ -14,10 +14,14 @@ export const DropdownMenuRadioGroup = Menu.RadioGroup
 export const floatingClasses = cn(
   'z-50 rounded-md bg-surface-raised text-fg shadow-popover outline-none',
   'data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in',
+  // Mobile: thick glass, the radius following its 4px padding (14 − 4 = 10).
+  'max-md:glass max-md:relative max-md:rounded-lg max-md:glass-thick',
 )
 
 const itemClasses = cn(
   'relative flex h-8 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm outline-none select-none',
+  // Touch-sized rows on mobile.
+  'max-md:h-11 max-md:rounded-md max-md:px-3 max-md:text-md',
   'data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-fill',
   '[&_svg]:size-4 [&_svg]:text-muted',
 )
