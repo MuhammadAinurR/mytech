@@ -7,6 +7,7 @@ import { Money } from '@/components/money'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { StatusDot } from '@/components/ui/status-dot'
 import { DismissReminder } from '@/features/dashboard/components/dismiss-reminder'
+import { QuickAdd } from '@/features/dashboard/components/quick-add'
 import { NetChart } from '@/features/dashboard/components/net-chart'
 import { DashboardSection, QuietEmpty } from '@/features/dashboard/components/section'
 import { InvoiceStatusDot } from '@/features/invoices/components/invoice-status'
@@ -68,18 +69,30 @@ async function renderDashboard(user: CurrentUser) {
     formatMoney(amount, cur, { signDisplay: 'exceptZero' }).replace(/^-/, '−')
 
   return (
-    <div className="px-(--gutter) pt-8 pb-16 max-md:pt-(--title-top)">
-      <header className="flex flex-col gap-1">
+    <div
+      data-grouped
+      className="relative px-(--gutter) pt-8 pb-16 max-md:px-4 max-md:pt-(--title-top) max-md:pb-8"
+    >
+      {/* The one ambient light field, behind the hero card (mobile only). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[36rem] ambient-field md:hidden"
+      />
+      <header className="relative flex flex-col gap-1">
         <h1 className="text-lg font-semibold max-md:text-xl max-md:tracking-[-0.02em]">
           Dashboard
         </h1>
         <p className="text-sm text-muted">{formatDateOnly(today, { style: 'long' })}</p>
       </header>
 
-      <div className="mt-8 grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
-        <div className="flex min-w-0 flex-col gap-10">
-          <section aria-labelledby="this-month" className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
+      <div className="relative mt-8 grid gap-x-12 gap-y-10 max-md:mt-6 max-md:flex max-md:flex-col max-md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+        <div className="flex min-w-0 flex-col gap-10 max-md:contents">
+          <section
+            aria-labelledby="this-month"
+            className="flex flex-col gap-6 max-md:order-1 max-md:gap-4"
+          >
+            {/* On mobile the hero figure sits on glass over the ambient field. */}
+            <div className="flex flex-col gap-2 max-md:glass max-md:relative max-md:rounded-2xl max-md:p-5 max-md:glass-hero">
               <h2 id="this-month" className="text-sm text-muted">
                 Net in {formatMonth(month)}
               </h2>
@@ -119,10 +132,17 @@ async function renderDashboard(user: CurrentUser) {
                 ))}
               </p>
             </div>
-            <NetChart points={series} currency={currency} />
+            <QuickAdd />
+            <div className="max-md:rounded-lg max-md:bg-surface max-md:p-4">
+              <NetChart points={series} currency={currency} />
+            </div>
           </section>
 
-          <DashboardSection title="Recent transactions" href="/transactions">
+          <DashboardSection
+            title="Recent transactions"
+            href="/transactions"
+            className="max-md:order-4"
+          >
             {recent.items.length === 0 ? (
               <QuietEmpty>
                 No transactions yet.{' '}
@@ -139,7 +159,7 @@ async function renderDashboard(user: CurrentUser) {
                 {recent.items.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-center gap-4 border-b border-border py-2.5 text-sm last:border-b-0"
+                    className="flex items-center gap-4 border-b border-border py-2.5 text-sm last:border-b-0 max-md:min-h-13 max-md:text-md"
                   >
                     <span className="w-14 shrink-0 tabular text-muted">
                       {formatDateOnly(item.occurredOn, {
@@ -160,8 +180,9 @@ async function renderDashboard(user: CurrentUser) {
           </DashboardSection>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-10">
+        <div className="flex min-w-0 flex-col gap-10 max-md:contents">
           <DashboardSection
+            className="max-md:order-2"
             first
             title="Due soon"
             href="/transactions/renewals"
@@ -176,7 +197,7 @@ async function renderDashboard(user: CurrentUser) {
                   return (
                     <li
                       key={reminder.id}
-                      className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0"
+                      className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0 max-md:min-h-13 max-md:py-2.5 max-md:text-md"
                     >
                       <Bell aria-hidden className="size-4 text-warning" />
                       <div className="min-w-0 flex-1">
@@ -202,7 +223,7 @@ async function renderDashboard(user: CurrentUser) {
                 {renewals.map((item) => (
                   <li
                     key={`${item.ruleId}-${item.date}`}
-                    className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0"
+                    className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0 max-md:min-h-13 max-md:py-2.5 max-md:text-md"
                   >
                     <span aria-hidden className="size-4" />
                     <div className="min-w-0 flex-1">
@@ -226,9 +247,13 @@ async function renderDashboard(user: CurrentUser) {
             )}
           </DashboardSection>
 
-          <DashboardSection title="Unpaid invoices" href="/invoices?status=sent">
+          <DashboardSection
+            title="Unpaid invoices"
+            href="/invoices?status=sent"
+            className="max-md:order-3"
+          >
             {receivables.length > 0 ? (
-              <dl className="flex flex-wrap gap-x-8 gap-y-2">
+              <dl className="flex flex-wrap gap-x-8 gap-y-2 max-md:border-b max-md:border-border max-md:py-3.5">
                 {receivables.map((row) => (
                   <div key={row.currency}>
                     <dt className="text-xs text-muted">Outstanding · {row.currency}</dt>
@@ -252,7 +277,7 @@ async function renderDashboard(user: CurrentUser) {
                   <li key={invoice.id} className="border-b border-border last:border-b-0">
                     <Link
                       href={`/invoices/${invoice.id}`}
-                      className="flex items-center gap-3 py-2 text-sm hover:bg-fill/60"
+                      className="flex items-center gap-3 py-2 text-sm hover:bg-fill/60 max-md:min-h-13 max-md:py-2.5 max-md:text-md max-md:hover:bg-transparent"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{invoice.clientName}</p>
@@ -273,7 +298,12 @@ async function renderDashboard(user: CurrentUser) {
             )}
           </DashboardSection>
 
-          <DashboardSection title="Ongoing projects" href="/projects/calendar" linkLabel="Calendar">
+          <DashboardSection
+            title="Ongoing projects"
+            href="/projects/calendar"
+            linkLabel="Calendar"
+            className="max-md:order-5"
+          >
             {projects.length === 0 ? (
               <QuietEmpty>No projects in progress today.</QuietEmpty>
             ) : (
@@ -283,7 +313,7 @@ async function renderDashboard(user: CurrentUser) {
                   return (
                     <li
                       key={project.id}
-                      className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0"
+                      className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0 max-md:min-h-13 max-md:py-2.5 max-md:text-md"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate">{project.name}</p>
