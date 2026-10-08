@@ -17,12 +17,15 @@ export const metadata: Metadata = {
   applicationName: 'Workbench',
   // Installed from Safari's share sheet, the app opens standalone with this
   // name and icon. The manifest (app/manifest.ts) covers other browsers.
-  appleWebApp: { capable: true, title: 'Workbench', statusBarStyle: 'default' },
+  // Content runs under a translucent status bar; the mobile shell pads for it.
+  appleWebApp: { capable: true, title: 'Workbench', statusBarStyle: 'black-translucent' },
   icons: { apple: '/icons/apple-touch-icon.png' },
   formatDetection: { telephone: false },
 }
 
 export const viewport: Viewport = {
+  // Edge to edge on notched phones; every edge respects env(safe-area-inset-*).
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: 'oklch(0.975 0.002 260)' },
     { media: '(prefers-color-scheme: dark)', color: 'oklch(0.155 0.004 260)' },

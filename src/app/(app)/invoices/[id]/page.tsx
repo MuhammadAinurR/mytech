@@ -1,6 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { CachedView } from '@/components/app-shell/cached-view'
@@ -47,17 +45,9 @@ async function renderInvoice(user: CurrentUser, id: string) {
 
   return (
     <>
-      <div className="px-(--gutter) pt-6">
-        <Link
-          href="/invoices"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg"
-        >
-          <ArrowLeft className="size-4" />
-          Invoices
-        </Link>
-      </div>
       <PageHeader
-        className="pt-3"
+        back={{ href: '/invoices', label: 'Invoices' }}
+        descriptionOnMobile
         title={<span className="font-mono">{invoice.numberLabel}</span>}
         description={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">

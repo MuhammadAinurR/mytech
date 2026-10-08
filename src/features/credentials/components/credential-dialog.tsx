@@ -5,6 +5,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 
 import { useEntityDialog } from '@/components/use-entity-dialog'
 import { Button } from '@/components/ui/button'
+import { GlassButton } from '@/components/ui/glass-button'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import type { CredentialItem } from '@/server/queries/credentials'
 
@@ -56,9 +57,16 @@ export function CredentialDialogProvider({ children }: { children: ReactNode }) 
 export function AddCredentialButton({
   variant = 'primary',
 }: {
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'glass'
 }) {
   const { openCreate } = useCredentialDialog()
+  if (variant === 'glass') {
+    return (
+      <GlassButton variant="accent" aria-label={'Add credential'} onClick={openCreate}>
+        <Plus />
+      </GlassButton>
+    )
+  }
   return (
     <Button variant={variant} size={variant === 'primary' ? 'md' : 'sm'} onClick={openCreate}>
       <Plus />

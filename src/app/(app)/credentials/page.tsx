@@ -48,9 +48,11 @@ async function renderCredentials(user: CurrentUser, query: CredentialListQuery) 
   return (
     <CredentialDialogProvider>
       <PageHeader
+        back={{ href: '/more', label: 'More', mobileOnly: true }}
         title="Credentials"
         description="Encrypted at rest. Every reveal and copy is logged."
         actions={<AddCredentialButton />}
+        mobileActions={<AddCredentialButton variant="glass" />}
       />
       {list.total > 0 || filtered ? (
         <ListToolbar

@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { GlassButton } from '@/components/ui/glass-button'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { toDecimalString } from '@/lib/money'
 import type { TransactionItem } from '@/server/queries/transactions'
@@ -119,9 +120,16 @@ export function AddTransactionButton({
   variant = 'primary',
 }: {
   label?: string
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'glass'
 }) {
   const { openCreate } = useTransactionDialog()
+  if (variant === 'glass') {
+    return (
+      <GlassButton variant="accent" aria-label={label} onClick={openCreate}>
+        <Plus />
+      </GlassButton>
+    )
+  }
   return (
     <Button variant={variant} size={variant === 'primary' ? 'md' : 'sm'} onClick={openCreate}>
       <Plus />

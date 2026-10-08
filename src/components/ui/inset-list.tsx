@@ -1,0 +1,115 @@
+import { ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { type ReactNode } from 'react'
+
+import { cn } from '@/lib/utils'
+
+/**
+ * Inset grouped lists, the mobile list style (DESIGN.md → Mobile): a
+ * rounded surface group on the canvas, 16px from the screen edge, with
+ * hairlines inset to the text. Pages using them mark their root
+ * `data-grouped` so the mobile canvas turns to `background` behind them.
+ */
+export function InsetSection({
+  title,
+  footer,
+  children,
+  className,
+}: {
+  title?: ReactNode
+  footer?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cn('px-4 md:px-(--gutter)', className)}>
+      {title ? <h2 className="px-4 pb-1.5 text-xs text-muted">{title}</h2> : null}
+      <div className="overflow-hidden rounded-lg bg-surface md:border md:border-border">
+        {children}
+      </div>
+      {footer ? <p className="px-4 pt-1.5 text-xs text-muted">{footer}</p> : null}
+    </section>
+  )
+}
+
+type RowContent = {
+  title: ReactNode
+  subtitle?: ReactNode
+  /** A 28px icon tile on the leading edge. */
+  icon?: ReactNode
+  /** Anything else on the leading edge (e.g. an avatar), drawn as is. */
+  leading?: ReactNode
+  trailing?: ReactNode
+  tone?: 'default' | 'danger'
+}
+
+function RowBody({
+  title,
+  subtitle,
+  icon,
+  leading,
+  trailing,
+  tone = 'default',
+  chevron,
+}: RowContent & { chevron: boolean }) {
+  return (
+    <>
+      {leading}
+      {icon ? (
+        <span
+          aria-hidden
+          className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm bg-fill-strong text-fg [&_svg]:size-4"
+        >
+          {icon}
+        </span>
+      ) : null}
+      <span className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-b border-border py-2 pr-4 group-last/row:border-b-0">
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className={cn('truncate text-md', tone === 'danger' && 'text-danger')}>
+            {title}
+          </span>
+          {subtitle ? <span className="truncate text-sm text-muted">{subtitle}</span> : null}
+        </span>
+        {trailing ? <span className="shrink-0 tabular text-md text-muted">{trailing}</span> : null}
+        {chevron ? <ChevronRight aria-hidden className="size-4 shrink-0 text-subtle" /> : null}
+      </span>
+    </>
+  )
+}
+
+const rowClasses =
+  'group/row flex w-full items-center gap-3 pl-4 text-left text-fg transition-colors duration-150 active:bg-fill'
+
+/** A row that navigates (with a chevron). */
+export function InsetLinkRow({ href, ...content }: RowContent & { href: string }) {
+  return (
+    <Link href={href} className={rowClasses}>
+      <RowBody {...content} chevron />
+    </Link>
+  )
+}
+
+/** A row that acts in place (no chevron), e.g. sign out. */
+export function InsetButtonRow({
+  onClick,
+  type = 'button',
+  ...content
+}: RowContent & { onClick?: () => void; type?: 'button' | 'submit' }) {
+  return (
+    <button type={type} onClick={onClick} className={cn(rowClasses, 'cursor-pointer')}>
+      <RowBody {...content} chevron={false} />
+    </button>
+  )
+}
+
+/** A row holding a control (a segmented switch, a toggle). */
+export function InsetRow({
+  children,
+  ...content
+}: Omit<RowContent, 'trailing'> & { children: ReactNode }) {
+  return (
+    <div className={rowClasses.replace('active:bg-fill', '')}>
+      <RowBody {...content} trailing={children} chevron={false} />
+    </div>
+  )
+}

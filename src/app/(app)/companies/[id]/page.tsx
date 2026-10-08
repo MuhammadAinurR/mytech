@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, Users } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -7,6 +7,7 @@ import { CachedView } from '@/components/app-shell/cached-view'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { GlassButton } from '@/components/ui/glass-button'
 import { PageHeader } from '@/components/ui/page-header'
 import { AddClientButton, ClientDialogProvider } from '@/features/clients/components/client-dialog'
 import { ClientsTable } from '@/features/clients/components/clients-table'
@@ -56,17 +57,9 @@ async function renderCompany(user: CurrentUser, id: string) {
       openFromUrl={false}
     >
       <ClientDialogProvider companyId={company.id} companyName={company.name}>
-        <div className="px-(--gutter) pt-6">
-          <Link
-            href="/companies"
-            className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg"
-          >
-            <ArrowLeft className="size-4" />
-            Companies
-          </Link>
-        </div>
         <PageHeader
-          className="pt-3"
+          back={{ href: '/companies', label: 'Companies' }}
+          descriptionOnMobile
           title={
             <span className="flex min-w-0 items-center gap-3">
               <span aria-hidden className="contents">
@@ -95,6 +88,16 @@ async function renderCompany(user: CurrentUser, id: string) {
                   New invoice
                 </Link>
               </Button>
+            </>
+          }
+          mobileActions={
+            <>
+              <EditCompanyButton company={company} variant="glass" />
+              <GlassButton asChild variant="accent" aria-label="New invoice">
+                <Link href={`/invoices/new?company=${company.id}`}>
+                  <Plus />
+                </Link>
+              </GlassButton>
             </>
           }
         />

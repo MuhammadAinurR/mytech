@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { GlassButton } from '@/components/ui/glass-button'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { toDecimalString } from '@/lib/money'
 import type { RecurringRule } from '@/server/queries/recurring'
@@ -111,8 +112,19 @@ export function RuleDialogProvider({
   )
 }
 
-export function NewRuleButton({ variant = 'primary' }: { variant?: 'primary' | 'secondary' }) {
+export function NewRuleButton({
+  variant = 'primary',
+}: {
+  variant?: 'primary' | 'secondary' | 'glass'
+}) {
   const { openCreate } = useRuleDialog()
+  if (variant === 'glass') {
+    return (
+      <GlassButton variant="accent" aria-label={'New rule'} onClick={openCreate}>
+        <Plus />
+      </GlassButton>
+    )
+  }
   return (
     <Button variant={variant} size={variant === 'primary' ? 'md' : 'sm'} onClick={openCreate}>
       <Plus />

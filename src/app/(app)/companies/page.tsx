@@ -29,9 +29,11 @@ async function renderCompanies(user: CurrentUser) {
   return (
     <CompanyDialogProvider companies={companies} defaultCurrency={user.defaultCurrency}>
       <PageHeader
+        back={{ href: '/more', label: 'More', mobileOnly: true }}
         title="Companies"
         description="The businesses you invoice from, each with its own numbering."
         actions={<AddCompanyButton />}
+        mobileActions={<AddCompanyButton variant="glass" />}
       />
       {companies.length > 0 ? (
         <div className="border-t border-border pt-2 md:border-t-0">
