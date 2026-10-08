@@ -158,6 +158,78 @@ test('invoices on a phone: save from the title bar, step the status, act from th
   await expect(page).toHaveURL(invoiceUrl)
 })
 
+test('projects on a phone: one column at a time, a long press reorders, the menu moves', async ({
+  page,
+  context,
+}) => {
+  const stamp = Date.now()
+  const first = `Phone project A ${stamp}`
+  const second = `Phone project B ${stamp}`
+  await page.goto('/projects')
+  for (const name of [first, second]) {
+    // The glass "+" in the title bar (an empty column offers one too).
+    await page.getByRole('button', { name: 'New project' }).first().click()
+    const dialog = page.getByRole('dialog', { name: 'New project' })
+    await dialog.getByLabel('Name').fill(name)
+    await dialog.getByRole('button', { name: 'Add project' }).click()
+    await expect(dialog).toBeHidden()
+  }
+
+  // Ongoing is shown first; To do holds the new projects.
+  const columns = page.getByRole('radiogroup', { name: 'Column' })
+  await expect(columns.getByRole('radio', { name: /^Ongoing/ })).toBeChecked()
+  await expect(page.getByText(first)).toBeHidden()
+  await columns.getByRole('radio', { name: /^To do/ }).click()
+  await expect(page.getByText(first)).toBeVisible()
+  await expect(page.getByRole('region', { name: /^Ongoing/ })).toBeHidden()
+
+  // A long press lifts the second card; dragging it up puts it first.
+  const cdp = await context.newCDPSession(page)
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>
+    cdp.send('Input.dispatchTouchEvent', {
+      type,
+      touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+    })
+  const card = (name: string) => page.locator('article').filter({ hasText: name })
+  const from = (await card(second).boundingBox())!
+  const to = (await card(first).boundingBox())!
+  const x = from.x + from.width / 2
+  const y = from.y + from.height / 2
+  await touch('touchStart', x, y)
+  await page.waitForTimeout(400)
+  for (let step = 1; step <= 10; step++) {
+    await touch('touchMove', x, y + ((to.y + 8 - y) * step) / 10)
+    await page.waitForTimeout(20)
+  }
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith('/projects'),
+  )
+  await touch('touchEnd')
+  await saved
+  await page.reload()
+  await columns.getByRole('radio', { name: /^To do/ }).click()
+  const order = await page.locator('[data-column="todo"] article').allTextContents()
+  const at = (name: string) => order.findIndex((text) => text.includes(name))
+  expect(at(second)).toBeLessThan(at(first))
+
+  // The menu moves a card to a column off screen, and says so.
+  await page.getByRole('button', { name: `Actions for ${first}` }).click()
+  await page.getByRole('menuitem', { name: 'Ongoing' }).click()
+  await page
+    .getByRole('dialog', { name: 'When is it happening?' })
+    .getByRole('button', { name: 'Start project' })
+    .click()
+  await expect(page.getByText('Moved to Ongoing')).toBeVisible()
+  await expect(page.getByText(first)).toBeHidden()
+  await columns.getByRole('radio', { name: /^Ongoing/ }).click()
+  // Started today and due in 14 days, by the dates dialog's defaults.
+  await expect(card(first)).toContainText('14 days left')
+
+  await page.getByRole('link', { name: 'Calendar view' }).click()
+  await expect(page).toHaveURL(/\/projects\/calendar$/)
+  await expect(page.getByRole('button', { name: new RegExp(first) })).toContainText('14 days left')
+})
+
 test('the large title collapses into the title bar on scroll', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 480 })
   await page.goto('/more')
@@ -175,6 +247,8 @@ test('the mobile shell has no accessibility violations', async ({ page }) => {
     '/transactions/renewals',
     '/invoices',
     '/invoices/new',
+    '/projects',
+    '/projects/calendar',
     '/more',
     '/companies',
     '/settings',

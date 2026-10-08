@@ -40,6 +40,8 @@ type RowContent = {
   /** Anything else on the leading edge (e.g. an avatar), drawn as is. */
   leading?: ReactNode
   trailing?: ReactNode
+  /** A line below the subtitle, e.g. a progress track. */
+  detail?: ReactNode
   tone?: 'default' | 'danger'
 }
 
@@ -49,6 +51,7 @@ function RowBody({
   icon,
   leading,
   trailing,
+  detail,
   tone = 'default',
   chevron,
 }: RowContent & { chevron: boolean }) {
@@ -69,6 +72,7 @@ function RowBody({
             {title}
           </span>
           {subtitle ? <span className="truncate text-sm text-muted">{subtitle}</span> : null}
+          {detail ? <span className="block pt-2 pb-1">{detail}</span> : null}
         </span>
         {trailing ? <span className="shrink-0 tabular text-md">{trailing}</span> : null}
         {chevron ? <ChevronRight aria-hidden className="size-4 shrink-0 text-subtle" /> : null}
@@ -97,6 +101,7 @@ export function InsetButtonRow({
   icon,
   leading,
   trailing,
+  detail,
   tone,
   className,
   ...button
@@ -112,7 +117,7 @@ export function InsetButtonRow({
       )}
       {...button}
     >
-      <RowBody {...{ title, subtitle, icon, leading, trailing, tone }} chevron={false} />
+      <RowBody {...{ title, subtitle, icon, leading, trailing, detail, tone }} chevron={false} />
     </button>
   )
 }

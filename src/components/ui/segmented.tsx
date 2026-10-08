@@ -23,12 +23,14 @@ export function SegmentedControl<T extends string>({
   options,
   label,
   className,
+  itemClassName,
 }: {
   value: T
   onValueChange: (value: T) => void
   options: Option<T>[]
   label: string
   className?: string
+  itemClassName?: string
 }) {
   return (
     <ToggleGroup.Root
@@ -39,7 +41,11 @@ export function SegmentedControl<T extends string>({
       className={cn(groupClasses, className)}
     >
       {options.map((option) => (
-        <ToggleGroup.Item key={option.value} value={option.value} className={itemClasses}>
+        <ToggleGroup.Item
+          key={option.value}
+          value={option.value}
+          className={cn(itemClasses, itemClassName)}
+        >
           {option.label}
         </ToggleGroup.Item>
       ))}
