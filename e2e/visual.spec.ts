@@ -21,7 +21,7 @@ const viewports = [
 ]
 const themes = ['light', 'dark'] as const
 const paths = (process.env.VISUAL_PATHS ?? '/styleguide').split(',').filter(Boolean)
-const PUBLIC = ['/login', '/signup', '/styleguide']
+const PUBLIC = ['/', '/login', '/signup', '/styleguide']
 const AUTH_STATE = 'artifacts/.visual-auth.json'
 
 test.describe.configure({ mode: 'serial' })
