@@ -27,7 +27,10 @@ export default async function MorePage() {
   const user = await requireUser()
 
   return (
-    <div data-grouped className="flex flex-col gap-8 pb-8">
+    <div
+      data-grouped
+      className="flex flex-col gap-8 pb-8 md:mx-auto md:w-full md:max-w-2xl md:py-8"
+    >
       <PageHeader title="More" className="pb-0" />
 
       <InsetSection>

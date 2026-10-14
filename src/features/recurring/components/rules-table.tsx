@@ -65,8 +65,8 @@ export function RulesTable({ rules, today }: { rules: RuleWithNext[]; today: str
             <TableHeader>
               <TableRow>
                 <TableHead className="w-full md:w-1/3">Name</TableHead>
-                <TableHead className="hidden md:table-cell">Schedule</TableHead>
-                <TableHead className="hidden w-36 sm:table-cell">Next</TableHead>
+                <TableHead className="hidden lg:table-cell">Schedule</TableHead>
+                <TableHead className="hidden w-32 sm:table-cell lg:w-36">Next</TableHead>
                 <TableHead numeric>Amount</TableHead>
                 <TableHead className="hidden w-14 sm:table-cell">
                   <span className="sr-only">Actions</span>
@@ -97,13 +97,13 @@ export function RulesTable({ rules, today }: { rules: RuleWithNext[]; today: str
                     </button>
                     <p className="hidden truncate text-xs text-muted sm:block">
                       {rule.category}
-                      <span className="md:hidden"> · {describeSchedule(rule)}</span>
+                      <span className="lg:hidden"> · {describeSchedule(rule)}</span>
                     </p>
                     <p className="truncate text-xs text-muted sm:hidden">
                       {nextLabel(rule, today)}
                     </p>
                   </TableCell>
-                  <TableCell className="hidden text-muted md:table-cell">
+                  <TableCell className="hidden text-muted lg:table-cell">
                     {describeSchedule(rule)}
                     {rule.reminderDaysBefore !== null ? (
                       <span className="text-subtle">

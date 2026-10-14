@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: LayoutProps<'/'>) {
           <Logo />
         </Link>
       </header>
-      <main className="flex flex-1 justify-center px-4 pt-12 pb-[max(4rem,env(safe-area-inset-bottom))] sm:pt-24">
+      <main className="flex flex-1 items-start justify-center px-4 pt-12 pb-[max(4rem,env(safe-area-inset-bottom))] sm:items-center sm:pt-0 sm:pb-[max(7rem,env(safe-area-inset-bottom))]">
         <div className="w-full max-w-sm">{children}</div>
       </main>
     </div>

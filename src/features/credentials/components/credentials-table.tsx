@@ -103,10 +103,12 @@ export function CredentialsTable({ items }: { items: CredentialItem[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-full md:w-1/4">Name</TableHead>
+                <TableHead className="w-full md:w-1/3 lg:w-1/4">Name</TableHead>
                 <TableHead className="hidden w-24 lg:table-cell">Type</TableHead>
-                <TableHead className="hidden md:table-cell md:w-1/4">Host</TableHead>
-                <TableHead className="w-20 text-right sm:w-56 sm:text-left">Secret</TableHead>
+                <TableHead className="hidden lg:table-cell lg:w-1/4">Host</TableHead>
+                <TableHead className="w-20 text-right sm:w-44 sm:text-left lg:w-56">
+                  Secret
+                </TableHead>
                 <TableHead className="hidden w-32 xl:table-cell">Last viewed</TableHead>
                 <TableHead className="hidden w-14 sm:table-cell">
                   <span className="sr-only">Actions</span>
@@ -139,7 +141,7 @@ export function CredentialsTable({ items }: { items: CredentialItem[] }) {
                   <TableCell className="hidden text-muted lg:table-cell">
                     {CREDENTIAL_TYPE_LABELS[item.type]}
                   </TableCell>
-                  <TableCell className="hidden max-w-0 md:table-cell">
+                  <TableCell className="hidden max-w-0 lg:table-cell">
                     <span className="block truncate font-mono text-sm text-muted">
                       {item.host ?? '—'}
                     </span>

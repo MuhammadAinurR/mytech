@@ -28,7 +28,7 @@ export function UpcomingList({ items }: { items: UpcomingOccurrence[] }) {
           <TableRow>
             <TableHead className="w-20 sm:w-28">Date</TableHead>
             <TableHead className="w-full sm:w-auto">Name</TableHead>
-            <TableHead className="hidden w-48 sm:table-cell">When</TableHead>
+            <TableHead className="hidden w-28 sm:table-cell lg:w-48">When</TableHead>
             <TableHead numeric>Amount</TableHead>
           </TableRow>
         </TableHeader>

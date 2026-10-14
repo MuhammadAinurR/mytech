@@ -105,9 +105,9 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-full md:w-2/5">Company</TableHead>
-                <TableHead className="hidden md:table-cell">Next number</TableHead>
-                <TableHead className="hidden w-24 sm:table-cell">Currency</TableHead>
+                <TableHead className="w-full md:w-3/5 lg:w-2/5">Company</TableHead>
+                <TableHead className="hidden lg:table-cell">Next number</TableHead>
+                <TableHead className="hidden w-24 lg:table-cell">Currency</TableHead>
                 <TableHead numeric className="hidden w-24 sm:table-cell">
                   Clients
                 </TableHead>
@@ -140,10 +140,10 @@ export function CompaniesTable({ companies }: { companies: CompanyWithCount[] })
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden font-mono text-sm text-muted md:table-cell">
+                  <TableCell className="hidden font-mono text-sm text-muted lg:table-cell">
                     {formatInvoiceNumber(company.invoicePrefix, company.nextInvoiceNumber)}
                   </TableCell>
-                  <TableCell className="hidden text-muted sm:table-cell">
+                  <TableCell className="hidden text-muted lg:table-cell">
                     {company.defaultCurrency}
                   </TableCell>
                   <TableCell numeric className="hidden sm:table-cell">

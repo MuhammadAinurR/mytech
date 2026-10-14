@@ -52,8 +52,8 @@ export function InvoiceDocument({
         </div>
       </header>
 
-      <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-rule py-6 sm:grid-cols-4">
-        <div className="col-span-2">
+      <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-rule py-6 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="col-span-2 sm:col-span-1">
           <dt className="text-xs text-ink-subtle">Billed to</dt>
           <dd className="mt-1 text-sm">
             <span className="font-medium">{invoice.clientName}</span>
@@ -72,11 +72,15 @@ export function InvoiceDocument({
         </div>
         <div>
           <dt className="text-xs text-ink-subtle">Issued</dt>
-          <dd className="mt-1 tabular text-sm">{formatDateOnly(invoice.issueDate)}</dd>
+          <dd className="mt-1 tabular text-sm whitespace-nowrap">
+            {formatDateOnly(invoice.issueDate)}
+          </dd>
         </div>
         <div>
           <dt className="text-xs text-ink-subtle">Due</dt>
-          <dd className="mt-1 tabular text-sm">{formatDateOnly(invoice.dueDate)}</dd>
+          <dd className="mt-1 tabular text-sm whitespace-nowrap">
+            {formatDateOnly(invoice.dueDate)}
+          </dd>
         </div>
       </dl>
 
