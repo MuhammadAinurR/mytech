@@ -4,7 +4,8 @@ import { buildContentSecurityPolicy, createNonce } from '@/lib/csp'
 import { SESSION_COOKIE_NAMES } from '@/lib/session-cookie'
 
 // Routes reachable without a session. Everything else requires one.
-const PUBLIC_PATHS = ['/login', '/signup', '/styleguide']
+// '/' matches exactly (nothing starts with '//'), so the app stays guarded.
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/styleguide']
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
