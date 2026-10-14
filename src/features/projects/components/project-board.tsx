@@ -295,7 +295,10 @@ export function ProjectBoard({ projects, today }: { projects: ProjectItem[]; tod
             }))}
           />
         </div>
-        <div data-grouped className="grid gap-4 px-(--gutter) pb-10 max-md:px-4 md:grid-cols-3">
+        <div
+          data-grouped
+          className="grid gap-4 px-(--gutter) pb-10 max-md:px-4 md:grid-cols-[repeat(3,minmax(15rem,1fr))] md:max-lg:snap-x md:max-lg:overflow-x-auto lg:grid-cols-3"
+        >
           {PROJECT_STATUSES.map((status) => (
             <Column
               key={status}

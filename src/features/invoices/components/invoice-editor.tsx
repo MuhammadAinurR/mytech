@@ -235,7 +235,7 @@ export function InvoiceEditor({
         <div className="flex flex-col gap-3">
           <div
             aria-hidden
-            className="hidden grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] gap-3 text-xs font-medium text-muted md:grid"
+            className="hidden grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] gap-3 text-xs font-medium text-muted lg:grid"
           >
             <span>Description</span>
             <span className="text-right">Qty</span>
@@ -248,9 +248,9 @@ export function InvoiceEditor({
             return (
               <div
                 key={line.id}
-                className="grid grid-cols-[minmax(0,1fr)_2rem] gap-x-3 gap-y-2 border-b border-border pb-3 md:grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] md:border-0 md:pb-0"
+                className="grid grid-cols-[minmax(0,1fr)_2rem] gap-x-3 gap-y-2 border-b border-border pb-3 lg:grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] lg:border-0 lg:pb-0"
               >
-                <div className="md:col-span-1">
+                <div className="lg:col-span-1">
                   <Field
                     label={`Line ${index + 1} description`}
                     hideLabel
@@ -266,14 +266,14 @@ export function InvoiceEditor({
                 <Button
                   size="icon-sm"
                   variant="ghost"
-                  className="mt-0.5 md:order-last"
+                  className="mt-0.5 lg:order-last"
                   aria-label={`Remove line ${index + 1}`}
                   disabled={lines.fields.length === 1}
                   onClick={() => lines.remove(index)}
                 >
                   <X />
                 </Button>
-                <div className="col-span-2 grid grid-cols-3 gap-3 md:col-span-3 md:grid-cols-[5rem_8rem_8rem]">
+                <div className="col-span-2 grid grid-cols-3 gap-3 lg:col-span-3 lg:grid-cols-[5rem_8rem_8rem]">
                   <Field
                     label={`Line ${index + 1} quantity`}
                     hideLabel

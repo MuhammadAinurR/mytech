@@ -29,8 +29,8 @@ export function InvoicesTable({ items, today }: { items: InvoiceListItem[]; toda
             <TableHeader>
               <TableRow>
                 <TableHead className="w-32">Number</TableHead>
-                <TableHead className="w-full md:w-auto">Client</TableHead>
-                <TableHead className="hidden w-28 md:table-cell">Issued</TableHead>
+                <TableHead className="w-full md:w-1/2 lg:w-auto">Client</TableHead>
+                <TableHead className="hidden w-28 lg:table-cell">Issued</TableHead>
                 <TableHead className="hidden w-28 sm:table-cell">Due</TableHead>
                 <TableHead className="hidden w-28 sm:table-cell">Status</TableHead>
                 <TableHead numeric>Total</TableHead>
@@ -63,7 +63,7 @@ export function InvoicesTable({ items, today }: { items: InvoiceListItem[]; toda
                       </span>
                     </p>
                   </TableCell>
-                  <TableCell className="hidden tabular whitespace-nowrap text-muted md:table-cell">
+                  <TableCell className="hidden tabular whitespace-nowrap text-muted lg:table-cell">
                     {date(invoice.issueDate)}
                   </TableCell>
                   <TableCell className="hidden tabular whitespace-nowrap text-muted sm:table-cell">

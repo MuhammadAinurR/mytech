@@ -119,7 +119,7 @@ function Figure({
       <dt className="text-xs text-muted">{label}</dt>
       <dd
         className={cn(
-          'truncate text-md font-semibold tracking-tight sm:text-xl',
+          'truncate text-md font-semibold tracking-tight sm:text-xl md:text-lg lg:text-xl',
           large && 'max-md:text-xl',
         )}
       >
