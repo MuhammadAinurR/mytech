@@ -9,9 +9,12 @@
 export function buildContentSecurityPolicy({
   nonce,
   isDev,
+  isSecure,
 }: {
   nonce: string
   isDev: boolean
+  /** Whether the request itself arrived over https. */
+  isSecure: boolean
 }): string {
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
@@ -33,7 +36,10 @@ export function buildContentSecurityPolicy({
   }
 
   const policy = Object.entries(directives).map(([name, values]) => `${name} ${values.join(' ')}`)
-  if (!isDev) policy.push('upgrade-insecure-requests')
+  // Only on https responses: WebKit (unlike Chromium) also upgrades
+  // subresources on plain-http localhost, which breaks reviewing the
+  // production build locally. On https it is the usual belt and braces.
+  if (!isDev && isSecure) policy.push('upgrade-insecure-requests')
   return policy.join('; ')
 }
 

@@ -28,7 +28,11 @@ export function proxy(request: NextRequest) {
   }
 
   const nonce = createNonce()
-  const csp = buildContentSecurityPolicy({ nonce, isDev: process.env.NODE_ENV === 'development' })
+  const csp = buildContentSecurityPolicy({
+    nonce,
+    isDev: process.env.NODE_ENV === 'development',
+    isSecure: request.nextUrl.protocol === 'https:',
+  })
 
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-nonce', nonce)
