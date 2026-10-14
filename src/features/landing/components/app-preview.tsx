@@ -36,13 +36,16 @@ export function AppPreview() {
           <p className="mt-1 tabular text-xl font-semibold tracking-[-0.02em] text-success">
             +$5,020.01
           </p>
+          {/* Each track is h-full so the bar's percentage height has a
+              definite base; against an auto-height wrapper WebKit drops the
+              bars entirely. */}
           <div className="mt-6 flex h-20 items-end gap-2 sm:h-24">
             {[46, 72, 58, 66, 61, 84].map((height, index, bars) => (
-              <span key={index} className="flex flex-1 items-end justify-center">
+              <span key={index} className="flex h-full flex-1 items-end justify-center">
                 <span
                   style={{ height: `${height}%` }}
                   className={cn(
-                    'block h-full w-3/5 rounded-t-xs',
+                    'block w-3/5 rounded-t-xs',
                     index === bars.length - 1 ? 'bg-accent' : 'bg-fill-strong',
                   )}
                 />
