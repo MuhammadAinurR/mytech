@@ -4,7 +4,7 @@ import { type PushMessage } from '@/features/notifications/lib/reminders'
 
 import { closeDb } from '../db'
 import { createCompany } from '../queries/companies'
-import { createInvoice, setInvoiceStatus } from '../queries/invoices'
+import { createInvoice, listInvoices, setInvoiceStatus, updateInvoice } from '../queries/invoices'
 import { type Delivery, savePushSubscription } from '../queries/push'
 import { createTestUser } from '../testing/factories'
 import { sendInvoiceReminders } from './invoice-reminders'
@@ -122,6 +122,44 @@ describe('sendInvoiceReminders', () => {
       sendInvoiceReminders({ now: NOW, push: fake.push }),
     ])
     expect(fake.of(user.id)).toHaveLength(1)
+  })
+
+  it('follows edits to a sent invoice: the new amount, and again for a new due date', async () => {
+    const user = await userWithInvoices('Asia/Jakarta', [
+      { dueDate: '2026-10-15', status: 'sent', client: 'Kopi Sore' },
+    ])
+    const [sent] = (await listInvoices(user.id)).items
+    if (!sent) throw new Error('setup')
+    const edit = async (dueDate: string, unitPriceMinor: number) => {
+      const result = await updateInvoice(user.id, sent.id, {
+        companyId: sent.companyId,
+        issueDate: '2026-10-01',
+        dueDate,
+        currency: 'USD',
+        clientName: 'Kopi Sore',
+        clientAddress: null,
+        clientEmail: null,
+        clientTaxId: null,
+        notes: null,
+        taxRateBps: 0,
+        discountMinor: 0,
+        items: [{ description: 'Work', quantityMilli: 1000, unitPriceMinor }],
+      })
+      if (!result.ok) throw new Error('edit failed')
+    }
+    const fake = fakePush()
+
+    await edit('2026-10-15', 150_000)
+    await sendInvoiceReminders({ now: NOW, push: fake.push })
+    expect(fake.of(user.id).map((c) => c.message.body)).toEqual(['Kopi Sore · $1,500.00'])
+
+    // More time for the client: the reminders start over for the new date.
+    await edit('2026-10-18', 150_000)
+    await sendInvoiceReminders({ now: NOW, push: fake.push })
+    expect(fake.of(user.id).map((c) => c.message.title)).toEqual([
+      'INV-0001 is due today',
+      'INV-0001 is due in 3 days',
+    ])
   })
 
   it('tries again next run when no device accepted it', async () => {

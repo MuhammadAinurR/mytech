@@ -14,6 +14,7 @@ import {
   deleteInvoice,
   getInvoice,
   getReceivables,
+  listDueInvoices,
   listInvoices,
   setInvoiceStatus,
   updateInvoice,
@@ -118,7 +119,7 @@ describe('invoice contents', () => {
     ])
   })
 
-  it('edits drafts (replacing lines) but not sent or paid invoices', async () => {
+  it('edits drafts, replacing their lines', async () => {
     const { user, issuer } = await setup()
     const created = await createInvoice(user.id, invoice(issuer.id))
     if (!created.ok) throw new Error('create failed')
@@ -137,10 +138,126 @@ describe('invoice contents', () => {
     expect(await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, id))).toHaveLength(
       1,
     )
+  })
 
-    await setInvoiceStatus(user.id, id, 'sent')
-    expect(await updateInvoice(user.id, id, edited)).toEqual({ ok: false, error: 'not_editable' })
-    expect(await deleteInvoice(user.id, id)).toEqual({ ok: false, error: 'not_editable' })
+  it.each(['sent', 'paid'] as const)(
+    'corrects a %s invoice’s lines and prices, keeping its status, dates, and number',
+    async (status) => {
+      const { user, issuer } = await setup()
+      const created = await createInvoice(user.id, invoice(issuer.id))
+      if (!created.ok) throw new Error('create failed')
+      const id = created.data.id
+      await setInvoiceStatus(user.id, id, 'sent')
+      if (status === 'paid') await setInvoiceStatus(user.id, id, 'paid')
+      const before = await getInvoice(user.id, id)
+
+      const corrected = invoice(issuer.id, {
+        items: [
+          { description: 'Design system', quantityMilli: 1000, unitPriceMinor: 120_000 },
+          { description: 'Support hours', quantityMilli: 2500, unitPriceMinor: 2_000 },
+          { description: 'Hosting', quantityMilli: 1000, unitPriceMinor: 10_000 },
+        ],
+      })
+      expect(await updateInvoice(user.id, id, corrected)).toEqual({
+        ok: true,
+        data: { savedClient: false },
+      })
+
+      const after = await getInvoice(user.id, id)
+      // 120,000 + 5,000 + 10,000 = 135,000; less 5,000 discount; 11% tax on 130,000.
+      expect(after).toMatchObject({
+        status,
+        numberLabel: before?.numberLabel,
+        sentAt: before?.sentAt,
+        paidAt: before?.paidAt,
+        subtotalMinor: 135_000,
+        discountMinor: 5_000,
+        taxMinor: 14_300,
+        totalMinor: 144_300,
+      })
+      expect(after?.items.map((i) => [i.description, i.unitPriceMinor, i.lineTotalMinor])).toEqual([
+        ['Design system', 120_000, 120_000],
+        ['Support hours', 2_000, 5_000],
+        ['Hosting', 10_000, 10_000],
+      ])
+      // Still part of the record: only drafts can be deleted.
+      expect(await deleteInvoice(user.id, id)).toEqual({ ok: false, error: 'not_editable' })
+    },
+  )
+
+  it('carries edits to sent and paid invoices into receivables and the lists', async () => {
+    const { user, issuer } = await setup()
+    const ids: Record<string, string> = {}
+    for (const clientName of ['Acorn Studio', 'Birch & Co', 'Cedar Ltd']) {
+      const created = await createInvoice(user.id, invoice(issuer.id, { clientName }))
+      if (!created.ok) throw new Error('create failed')
+      ids[clientName] = created.data.id
+      await setInvoiceStatus(user.id, created.data.id, 'sent')
+    }
+    await setInvoiceStatus(user.id, ids['Cedar Ltd']!, 'paid')
+    expect(await getReceivables(user.id, '2026-10-10')).toEqual([
+      { currency: 'USD', outstandingMinor: 222_000, overdueMinor: 0, overdueCount: 0 },
+    ])
+
+    // Double Acorn's work and move its due date into the past.
+    await updateInvoice(
+      user.id,
+      ids['Acorn Studio']!,
+      invoice(issuer.id, {
+        clientName: 'Acorn Studio',
+        dueDate: '2026-10-08',
+        taxRateBps: 0,
+        discountMinor: 0,
+        items: [{ description: 'Design system', quantityMilli: 2000, unitPriceMinor: 100_000 }],
+      }),
+    )
+    // A paid invoice is corrected too, but is never a receivable.
+    await updateInvoice(
+      user.id,
+      ids['Cedar Ltd']!,
+      invoice(issuer.id, {
+        clientName: 'Cedar Ltd',
+        items: [{ description: 'Retainer', quantityMilli: 1000, unitPriceMinor: 900_000 }],
+      }),
+    )
+
+    expect(await getReceivables(user.id, '2026-10-10')).toEqual([
+      { currency: 'USD', outstandingMinor: 311_000, overdueMinor: 200_000, overdueCount: 1 },
+    ])
+    expect((await listDueInvoices(user.id)).map((i) => [i.clientName, i.totalMinor])).toEqual([
+      ['Acorn Studio', 200_000],
+      ['Birch & Co', 111_000],
+    ])
+    const listed = (await listInvoices(user.id)).items
+    expect(Object.fromEntries(listed.map((i) => [i.clientName, [i.status, i.totalMinor]]))).toEqual(
+      {
+        'Acorn Studio': ['sent', 200_000],
+        'Birch & Co': ['sent', 111_000],
+        'Cedar Ltd': ['paid', 993_450],
+      },
+    )
+
+    // Switching a sent invoice's currency moves it to that currency's receivables.
+    await updateInvoice(
+      user.id,
+      ids['Birch & Co']!,
+      invoice(issuer.id, { clientName: 'Birch & Co', currency: 'EUR' }),
+    )
+    expect(await getReceivables(user.id, '2026-10-10')).toEqual([
+      { currency: 'EUR', outstandingMinor: 111_000, overdueMinor: 0, overdueCount: 0 },
+      { currency: 'USD', outstandingMinor: 200_000, overdueMinor: 200_000, overdueCount: 1 },
+    ])
+  })
+
+  it('refuses to delete sent and paid invoices', async () => {
+    const { user, issuer } = await setup()
+    const created = await createInvoice(user.id, invoice(issuer.id))
+    if (!created.ok) throw new Error('create failed')
+    await setInvoiceStatus(user.id, created.data.id, 'sent')
+    expect(await deleteInvoice(user.id, created.data.id)).toEqual({
+      ok: false,
+      error: 'not_editable',
+    })
   })
 
   it('moves through draft → sent → paid with timestamps and allows undo', async () => {

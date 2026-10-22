@@ -295,21 +295,26 @@ export async function createInvoice(
   }
 }
 
-/** Drafts only; the issuing company (and so the number) never changes. */
+/**
+ * Edits an invoice in any status, so a mistake on a sent or paid invoice can be
+ * corrected. Status and the sent/paid dates stay as they are, and the totals
+ * are recomputed from the new lines; receivables, the unpaid list, and
+ * reminders read those stored totals, so they follow the edit. The issuing
+ * company (and so the number) never changes.
+ */
 export async function updateInvoice(
   userId: string,
   id: string,
   input: InvoiceFields,
   { saveClient = false }: SaveOptions = {},
-): Promise<Result<{ savedClient: boolean }, 'not_found' | 'not_editable'>> {
+): Promise<Result<{ savedClient: boolean }, 'not_found'>> {
   return db.transaction(async (tx) => {
     const [current] = await tx
-      .select({ status: invoices.status, companyId: invoices.companyId })
+      .select({ companyId: invoices.companyId })
       .from(invoices)
       .where(and(eq(invoices.userId, userId), eq(invoices.id, id)))
       .for('update')
     if (!current) return err('not_found')
-    if (current.status !== 'draft') return err('not_editable')
 
     const { fields, lineTotals } = priced(input)
     await tx.update(invoices).set(fields).where(eq(invoices.id, id))
