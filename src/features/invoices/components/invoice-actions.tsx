@@ -116,14 +116,14 @@ export function InvoiceActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
+          <DropdownMenuItem asChild>
+            <Link href={`/invoices/${id}/edit`}>
+              <Pencil />
+              Edit
+            </Link>
+          </DropdownMenuItem>
           {status === 'draft' ? (
             <>
-              <DropdownMenuItem asChild>
-                <Link href={`/invoices/${id}/edit`}>
-                  <Pencil />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => move('paid')}>
                 <CheckCheck />
                 Mark as paid
