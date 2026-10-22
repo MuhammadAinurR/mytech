@@ -4,8 +4,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useRef, useTransition } from 'react'
-import { Controller, useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
+import { useRef, useSyncExternalStore, useTransition } from 'react'
+import {
+  Controller,
+  useFieldArray,
+  useForm,
+  useWatch,
+  type Control,
+  type Path,
+  type RegisterOptions,
+} from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
 import { CheckboxField } from '@/components/ui/checkbox'
@@ -45,6 +53,18 @@ export function InvoiceEditor({
     mode: 'onTouched',
   })
   const { errors } = form.formState
+  // The server renders this form before react-hook-form takes it over, which
+  // would overwrite or merge anything typed in the meantime ("3" saved as "13").
+  // It stays disabled until hydration, showing its values from the server HTML.
+  const hydrated = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  )
+  const field = <N extends Path<InvoiceFormValues>>(
+    name: N,
+    options?: RegisterOptions<InvoiceFormValues, N>,
+  ) => ({ ...form.register(name, options), defaultValue: String(form.getValues(name) ?? '') })
   const lines = useFieldArray({ control: form.control, name: 'items' })
   const [companyId, issueDate, clientName] = useWatch({
     control: form.control,
@@ -107,272 +127,276 @@ export function InvoiceEditor({
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => form.handleSubmit(save)(event)
 
   return (
-    <form id={INVOICE_EDITOR_FORM} onSubmit={onSubmit} noValidate className="flex flex-col">
-      <Section title="From">
-        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_8rem]">
-          <Field
-            label="Company"
-            required
-            error={errors.companyId?.message}
-            hint={
-              invoiceId
-                ? 'The issuing company is fixed once an invoice is numbered.'
-                : selectedCompany
-                  ? `This will be ${selectedCompany.nextLabel}.`
-                  : undefined
-            }
-          >
-            <Select
-              disabled={Boolean(invoiceId)}
-              {...form.register('companyId', {
-                onChange: (event: { target: { value: string } }) => {
-                  const company = companies.find((c) => c.id === event.target.value)
-                  if (company) form.setValue('currency', company.defaultCurrency as 'USD')
-                },
-              })}
-            >
-              <option value="">Choose a company…</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Currency" required error={errors.currency?.message}>
-            <Select {...form.register('currency')}>
-              {CURRENCIES.map((code) => (
-                <option key={code}>{code}</option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-      </Section>
-
-      <Section title="Bill to">
-        <div className="grid gap-5 sm:grid-cols-2">
-          {savedClients.length > 0 ? (
-            <div className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
-              <Field
-                label="Saved client"
-                hideOptional
-                hint="Fills in the details below. Changes apply to this invoice only."
-              >
-                <Select
-                  value={savedClient?.id ?? ''}
-                  onChange={(event) => pickClient(event.target.value)}
-                >
-                  <option value="">New client</option>
-                  {savedClients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-          ) : null}
-          <Field label="Client name" required error={errors.clientName?.message}>
-            <Input autoComplete="off" {...form.register('clientName')} />
-          </Field>
-          <Field label="Email" error={errors.clientEmail?.message}>
-            <Input type="email" autoComplete="off" {...form.register('clientEmail')} />
-          </Field>
-          <Field label="Address" error={errors.clientAddress?.message}>
-            <Textarea rows={3} {...form.register('clientAddress')} />
-          </Field>
-          <Field label="Tax ID" error={errors.clientTaxId?.message}>
-            <Input className="font-mono" {...form.register('clientTaxId')} />
-          </Field>
-          {canSaveClient && selectedCompany ? (
-            <Controller
-              control={form.control}
-              name="saveClient"
-              render={({ field }) => (
-                <CheckboxField
-                  className="sm:col-span-2"
-                  label={`Save to ${selectedCompany.name}’s clients`}
-                  hint="Pick them on the next invoice instead of typing their details."
-                  checked={Boolean(field.value)}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                  onBlur={field.onBlur}
-                />
-              )}
-            />
-          ) : null}
-        </div>
-      </Section>
-
-      <Section title="Dates">
-        <div className="grid gap-5 sm:grid-cols-[12rem_12rem_1fr] sm:items-start">
-          <Field label="Issued" required error={errors.issueDate?.message}>
-            <Input type="date" {...form.register('issueDate')} />
-          </Field>
-          <Field label="Due" required error={errors.dueDate?.message}>
-            <Input type="date" {...form.register('dueDate')} />
-          </Field>
-          <div className="flex flex-wrap items-center gap-1 sm:pt-6">
-            {[7, 14, 30].map((days) => (
-              <Button
-                key={days}
-                size="sm"
-                variant="ghost"
-                disabled={!isDateOnly(issueDate)}
-                onClick={() =>
-                  form.setValue('dueDate', addDays(issueDate, days), { shouldValidate: true })
-                }
-              >
-                Net {days}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      <Section title="Items">
-        <div className="flex flex-col gap-3">
-          <div
-            aria-hidden
-            className="hidden grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] gap-3 text-xs font-medium text-muted lg:grid"
-          >
-            <span>Description</span>
-            <span className="text-right">Qty</span>
-            <span className="text-right">Unit price</span>
-            <span className="text-right">Amount</span>
-            <span />
-          </div>
-          {lines.fields.map((line, index) => {
-            const lineErrors = errors.items?.[index]
-            return (
-              <div
-                key={line.id}
-                className="grid grid-cols-[minmax(0,1fr)_2rem] gap-x-3 gap-y-2 border-b border-border pb-3 lg:grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] lg:border-0 lg:pb-0"
-              >
-                <div className="lg:col-span-1">
-                  <Field
-                    label={`Line ${index + 1} description`}
-                    hideLabel
-                    required
-                    error={lineErrors?.description?.message}
-                  >
-                    <Input
-                      placeholder="What you delivered"
-                      {...form.register(`items.${index}.description`)}
-                    />
-                  </Field>
-                </div>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  className="mt-0.5 lg:order-last"
-                  aria-label={`Remove line ${index + 1}`}
-                  disabled={lines.fields.length === 1}
-                  onClick={() => lines.remove(index)}
-                >
-                  <X />
-                </Button>
-                <div className="col-span-2 grid grid-cols-3 gap-3 lg:col-span-3 lg:grid-cols-[5rem_8rem_8rem]">
-                  <Field
-                    label={`Line ${index + 1} quantity`}
-                    hideLabel
-                    required
-                    error={lineErrors?.quantity?.message}
-                  >
-                    <Input
-                      inputMode="decimal"
-                      className="text-right tabular"
-                      {...form.register(`items.${index}.quantity`)}
-                    />
-                  </Field>
-                  <Field
-                    label={`Line ${index + 1} unit price`}
-                    hideLabel
-                    required
-                    error={lineErrors?.unitPrice?.message}
-                  >
-                    <Input
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      className="text-right tabular"
-                      {...form.register(`items.${index}.unitPrice`)}
-                    />
-                  </Field>
-                  <LineAmount control={form.control} index={index} />
-                </div>
-              </div>
-            )
-          })}
-          <div>
-            <Button size="sm" variant="ghost" onClick={() => lines.append(EMPTY_LINE)}>
-              <Plus />
-              Add line
-            </Button>
-          </div>
-          {errors.items?.root?.message || errors.items?.message ? (
-            <p className="text-xs text-danger" role="alert">
-              {errors.items?.root?.message ?? errors.items?.message}
-            </p>
-          ) : null}
-        </div>
-      </Section>
-
-      <Section title="Totals">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <div className="grid content-start gap-5 sm:grid-cols-2">
+    <form id={INVOICE_EDITOR_FORM} onSubmit={onSubmit} noValidate>
+      <fieldset disabled={!hydrated} className="flex min-w-0 flex-col">
+        <Section title="From">
+          <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_8rem]">
             <Field
-              label="Tax rate"
-              hint="Percent, applied after the discount."
-              error={errors.taxRate?.message}
+              label="Company"
+              required
+              error={errors.companyId?.message}
+              hint={
+                invoiceId
+                  ? 'The issuing company is fixed once an invoice is numbered.'
+                  : selectedCompany
+                    ? `This will be ${selectedCompany.nextLabel}.`
+                    : undefined
+              }
             >
-              <div className="relative">
+              <Select
+                disabled={Boolean(invoiceId)}
+                {...field('companyId', {
+                  onChange: (event: { target: { value: string } }) => {
+                    const company = companies.find((c) => c.id === event.target.value)
+                    if (company) form.setValue('currency', company.defaultCurrency as 'USD')
+                  },
+                })}
+              >
+                <option value="">Choose a company…</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Currency" required error={errors.currency?.message}>
+              <Select {...field('currency')}>
+                {CURRENCIES.map((code) => (
+                  <option key={code}>{code}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Bill to">
+          <div className="grid gap-5 sm:grid-cols-2">
+            {savedClients.length > 0 ? (
+              <div className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+                <Field
+                  label="Saved client"
+                  hideOptional
+                  hint="Fills in the details below. Changes apply to this invoice only."
+                >
+                  <Select
+                    value={savedClient?.id ?? ''}
+                    onChange={(event) => pickClient(event.target.value)}
+                  >
+                    <option value="">New client</option>
+                    {savedClients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+            ) : null}
+            <Field label="Client name" required error={errors.clientName?.message}>
+              <Input autoComplete="off" {...field('clientName')} />
+            </Field>
+            <Field label="Email" error={errors.clientEmail?.message}>
+              <Input type="email" autoComplete="off" {...field('clientEmail')} />
+            </Field>
+            <Field label="Address" error={errors.clientAddress?.message}>
+              <Textarea rows={3} {...field('clientAddress')} />
+            </Field>
+            <Field label="Tax ID" error={errors.clientTaxId?.message}>
+              <Input className="font-mono" {...field('clientTaxId')} />
+            </Field>
+            {canSaveClient && selectedCompany ? (
+              <Controller
+                control={form.control}
+                name="saveClient"
+                render={({ field }) => (
+                  <CheckboxField
+                    className="sm:col-span-2"
+                    label={`Save to ${selectedCompany.name}’s clients`}
+                    hint="Pick them on the next invoice instead of typing their details."
+                    checked={Boolean(field.value)}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+            ) : null}
+          </div>
+        </Section>
+
+        <Section title="Dates">
+          <div className="grid gap-5 sm:grid-cols-[12rem_12rem_1fr] sm:items-start">
+            <Field label="Issued" required error={errors.issueDate?.message}>
+              <Input type="date" {...field('issueDate')} />
+            </Field>
+            <Field label="Due" required error={errors.dueDate?.message}>
+              <Input type="date" {...field('dueDate')} />
+            </Field>
+            <div className="flex flex-wrap items-center gap-1 sm:pt-6">
+              {[7, 14, 30].map((days) => (
+                <Button
+                  key={days}
+                  size="sm"
+                  variant="ghost"
+                  disabled={!isDateOnly(issueDate)}
+                  onClick={() =>
+                    form.setValue('dueDate', addDays(issueDate, days), { shouldValidate: true })
+                  }
+                >
+                  Net {days}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        <Section title="Items">
+          <div className="flex flex-col gap-3">
+            <div
+              aria-hidden
+              className="hidden grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] gap-3 text-xs font-medium text-muted lg:grid"
+            >
+              <span>Description</span>
+              <span className="text-right">Qty</span>
+              <span className="text-right">Unit price</span>
+              <span className="text-right">Amount</span>
+              <span />
+            </div>
+            {lines.fields.map((line, index) => {
+              const lineErrors = errors.items?.[index]
+              return (
+                <div
+                  key={line.id}
+                  className="grid grid-cols-[minmax(0,1fr)_2rem] gap-x-3 gap-y-2 border-b border-border pb-3 lg:grid-cols-[minmax(0,1fr)_5rem_8rem_8rem_2rem] lg:border-0 lg:pb-0"
+                >
+                  <div className="lg:col-span-1">
+                    <Field
+                      label={`Line ${index + 1} description`}
+                      hideLabel
+                      required
+                      error={lineErrors?.description?.message}
+                    >
+                      <Input
+                        placeholder="What you delivered"
+                        {...field(`items.${index}.description`)}
+                      />
+                    </Field>
+                  </div>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    className="mt-0.5 lg:order-last"
+                    aria-label={`Remove line ${index + 1}`}
+                    disabled={lines.fields.length === 1}
+                    onClick={() => lines.remove(index)}
+                  >
+                    <X />
+                  </Button>
+                  <div className="col-span-2 grid grid-cols-3 gap-3 lg:col-span-3 lg:grid-cols-[5rem_8rem_8rem]">
+                    <Field
+                      label={`Line ${index + 1} quantity`}
+                      hideLabel
+                      required
+                      error={lineErrors?.quantity?.message}
+                    >
+                      <Input
+                        inputMode="decimal"
+                        className="text-right tabular"
+                        {...field(`items.${index}.quantity`)}
+                      />
+                    </Field>
+                    <Field
+                      label={`Line ${index + 1} unit price`}
+                      hideLabel
+                      required
+                      error={lineErrors?.unitPrice?.message}
+                    >
+                      <Input
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        className="text-right tabular"
+                        {...field(`items.${index}.unitPrice`)}
+                      />
+                    </Field>
+                    <LineAmount control={form.control} index={index} />
+                  </div>
+                </div>
+              )
+            })}
+            <div>
+              <Button size="sm" variant="ghost" onClick={() => lines.append(EMPTY_LINE)}>
+                <Plus />
+                Add line
+              </Button>
+            </div>
+            {errors.items?.root?.message || errors.items?.message ? (
+              <p className="text-xs text-danger" role="alert">
+                {errors.items?.root?.message ?? errors.items?.message}
+              </p>
+            ) : null}
+          </div>
+        </Section>
+
+        <Section title="Totals">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="grid content-start gap-5 sm:grid-cols-2">
+              <Field
+                label="Tax rate"
+                hint="Percent, applied after the discount."
+                error={errors.taxRate?.message}
+              >
+                <div className="relative">
+                  <Input
+                    inputMode="decimal"
+                    placeholder="0"
+                    className="pr-8 tabular"
+                    {...field('taxRate')}
+                  />
+                  <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-subtle">
+                    %
+                  </span>
+                </div>
+              </Field>
+              <Field
+                label="Discount"
+                hint="A fixed amount off the subtotal."
+                error={errors.discount?.message}
+              >
                 <Input
                   inputMode="decimal"
-                  placeholder="0"
-                  className="pr-8 tabular"
-                  {...form.register('taxRate')}
+                  placeholder="0.00"
+                  className="tabular"
+                  {...field('discount')}
                 />
-                <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-subtle">
-                  %
-                </span>
-              </div>
-            </Field>
-            <Field
-              label="Discount"
-              hint="A fixed amount off the subtotal."
-              error={errors.discount?.message}
-            >
-              <Input
-                inputMode="decimal"
-                placeholder="0.00"
-                className="tabular"
-                {...form.register('discount')}
-              />
-            </Field>
-            <Field
-              label="Notes"
-              className="sm:col-span-2"
-              hint="Shown on the invoice, e.g. terms or a thank-you."
-              error={errors.notes?.message}
-            >
-              <Textarea rows={3} {...form.register('notes')} />
-            </Field>
+              </Field>
+              <Field
+                label="Notes"
+                className="sm:col-span-2"
+                hint="Shown on the invoice, e.g. terms or a thank-you."
+                error={errors.notes?.message}
+              >
+                <Textarea rows={3} {...field('notes')} />
+              </Field>
+            </div>
+            <LiveTotals control={form.control} />
           </div>
-          <LiveTotals control={form.control} />
-        </div>
-      </Section>
+        </Section>
 
-      {/* Phones save from the title bar instead; this bar would sit under the tab bar. */}
-      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-surface px-(--gutter) py-3 max-md:hidden">
-        <Button asChild variant="secondary">
-          <Link href={invoiceId ? `/invoices/${invoiceId}` : '/invoices'}>Cancel</Link>
-        </Button>
-        <Button type="submit" variant="primary" loading={pending}>
-          {invoiceId ? 'Save changes' : 'Save draft'}
-        </Button>
-      </div>
+        {/* Phones save from the title bar instead; this bar would sit under the tab bar. */}
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-surface px-(--gutter) py-3 max-md:hidden">
+          <Button asChild variant="secondary">
+            <Link href={invoiceId ? `/invoices/${invoiceId}` : '/invoices'}>Cancel</Link>
+          </Button>
+          <Button type="submit" variant="primary" loading={pending}>
+            {invoiceId ? 'Save changes' : 'Save draft'}
+          </Button>
+        </div>
+      </fieldset>
     </form>
   )
 }
+
+const noopSubscribe = () => () => {}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

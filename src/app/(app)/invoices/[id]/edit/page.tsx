@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import type { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 
 import { GlassButton } from '@/components/ui/glass-button'
 import { PageHeader } from '@/components/ui/page-header'
@@ -22,7 +22,14 @@ export default async function EditInvoicePage({ params }: PageProps<'/invoices/[
     companyOptions(user.id),
   ])
   if (!invoice) notFound()
-  if (invoice.status !== 'draft') redirect(`/invoices/${invoice.id}`)
+
+  // Sent and paid invoices can be corrected too; say what saving does to them.
+  const description =
+    invoice.status === 'draft'
+      ? `Draft for ${invoice.clientName}`
+      : `${invoice.status === 'sent' ? 'Sent to' : 'Paid by'} ${invoice.clientName}. Saving updates it everywhere here, ${
+          invoice.status === 'sent' ? 'including the unpaid total on the dashboard, ' : ''
+        }but not the copy your client already has.`
 
   return (
     <>
@@ -39,7 +46,8 @@ export default async function EditInvoicePage({ params }: PageProps<'/invoices/[
           </GlassButton>
         }
         title={`Edit ${invoice.numberLabel}`}
-        description={`Draft for ${invoice.clientName}`}
+        description={description}
+        descriptionOnMobile={invoice.status !== 'draft'}
       />
       <InvoiceEditor
         invoiceId={invoice.id}

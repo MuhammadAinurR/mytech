@@ -144,7 +144,9 @@ test('invoices on a phone: save from the title bar, step the status, act from th
   await expect(page.getByRole('button', { name: 'Mark as paid' })).toBeVisible()
   await page.getByRole('button', { name: 'Invoice actions' }).click()
   await expect(page.getByRole('menuitem', { name: 'Move back to draft' })).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: 'Edit' })).toHaveCount(0)
+  // Sent invoices can still be corrected; only drafts can be deleted.
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Delete draft' })).toHaveCount(0)
   await page.keyboard.press('Escape')
   await expect(page.getByRole('menu')).toBeHidden()
 

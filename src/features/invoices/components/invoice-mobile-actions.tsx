@@ -19,7 +19,7 @@ import { DeleteDraftDialog, useInvoiceMove } from './invoice-actions'
 
 /**
  * Phones: every invoice action behind one glass "…" in the title bar (print,
- * PDF, edit, status, delete). The status's primary action also shows as a
+ * PDF, edit, status, delete for drafts). The status's primary action also shows as a
  * full-width button under the title (InvoicePrimaryAction).
  */
 export function InvoiceMobileMenu({
@@ -56,14 +56,14 @@ export function InvoiceMobileMenu({
             </a>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href={`/invoices/${id}/edit`}>
+              <Pencil />
+              Edit
+            </Link>
+          </DropdownMenuItem>
           {status === 'draft' ? (
             <>
-              <DropdownMenuItem asChild>
-                <Link href={`/invoices/${id}/edit`}>
-                  <Pencil />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => move('paid')}>
                 <CheckCheck />
                 Mark as paid
