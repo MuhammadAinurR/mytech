@@ -110,12 +110,13 @@ using an API you are not sure about.
 
 ## Commands
 
-| Command                               | Purpose                                      |
-| ------------------------------------- | -------------------------------------------- |
-| `npm run dev`                         | Next.js dev server                           |
-| `npm run worker`                      | BullMQ worker (recurring entries, reminders) |
-| `npm run typecheck` / `lint` / `test` | Quality gates                                |
-| `npm run build`                       | Production build                             |
-| `npm run test:e2e`                    | Playwright flows (builds and starts the app) |
-| `npm run db:generate` / `db:migrate`  | Create and apply SQL migrations              |
-| `npm run db:seed`                     | Seed a demo account in `workbench_dev`       |
+| Command                               | Purpose                                                    |
+| ------------------------------------- | ---------------------------------------------------------- |
+| `npm run dev`                         | Next.js dev server                                         |
+| `npm run worker`                      | BullMQ worker (recurring entries, reminders)               |
+| `npm run typecheck` / `lint` / `test` | Quality gates                                              |
+| `npm run build`                       | Production build                                           |
+| `npm run test:e2e`                    | Playwright flows (builds and starts the app)               |
+| `npm run db:generate` / `db:migrate`  | Create and apply SQL migrations                            |
+| `npm run db:seed`                     | Seed a demo account in `workbench_dev`                     |
+| `./deploy/deploy.sh`                  | Deploy `main` to startup.rofiq.id (see `deploy/README.md`) |
