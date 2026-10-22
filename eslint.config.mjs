@@ -48,6 +48,11 @@ const eslintConfig = defineConfig([
     files: ['scripts/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
+  {
+    // CommonJS on purpose: PM2 loads deploy/ecosystem.config.cjs with require().
+    files: ['**/*.cjs'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   globalIgnores([
     '.next/**',
     'out/**',
