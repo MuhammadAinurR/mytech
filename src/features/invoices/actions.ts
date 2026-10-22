@@ -55,7 +55,7 @@ export async function createInvoiceAction(
 export async function updateInvoiceAction(
   id: unknown,
   input: unknown,
-): Promise<Result<{ savedClient: boolean }, 'invalid' | 'not_found' | 'not_editable'>> {
+): Promise<Result<{ savedClient: boolean }, 'invalid' | 'not_found'>> {
   const user = await requireUser()
   const invoiceId = uuidSchema.safeParse(id)
   if (!invoiceId.success) return err('not_found')

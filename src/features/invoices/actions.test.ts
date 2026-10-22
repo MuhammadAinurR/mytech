@@ -3,11 +3,12 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { closeDb } from '@/server/db'
 import { listClients } from '@/server/queries/clients'
 import { createCompany } from '@/server/queries/companies'
+import { getInvoice } from '@/server/queries/invoices'
 import { closeRedis } from '@/server/redis'
 import { createTestUser, signInAs } from '@/server/testing/factories'
 import { resetRequest } from '@/server/testing/next-request'
 
-import { createInvoiceAction, updateInvoiceAction } from './actions'
+import { createInvoiceAction, setInvoiceStatusAction, updateInvoiceAction } from './actions'
 import { type InvoiceFormValues } from './schema'
 
 afterAll(async () => {
@@ -72,6 +73,25 @@ describe('invoice actions saving the client', () => {
       ),
     ).toEqual({ ok: true, data: { savedClient: true } })
     expect((await listClients(user.id, company.id)).map((c) => c.name)).toEqual(['Acme'])
+  })
+
+  it('save new prices on an invoice that was already sent, keeping it sent', async () => {
+    const { user, company } = await signedInWithCompany()
+    const created = await createInvoiceAction(values(company.id))
+    if (!created.ok) throw new Error('setup')
+    await setInvoiceStatusAction(created.data.id, 'sent')
+
+    const repriced = values(company.id, {
+      items: [{ description: 'Design', quantity: '2', unitPrice: '1,500.00' }],
+    })
+    expect(await updateInvoiceAction(created.data.id, repriced)).toEqual({
+      ok: true,
+      data: { savedClient: false },
+    })
+    expect(await getInvoice(user.id, created.data.id)).toMatchObject({
+      status: 'sent',
+      totalMinor: 300_000,
+    })
   })
 
   it('reject a non-boolean saveClient', async () => {

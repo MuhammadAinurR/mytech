@@ -92,9 +92,7 @@ export function InvoiceEditor({
           router.push(`/invoices/${'id' in result.data ? result.data.id : invoiceId}`)
           return
         }
-        if (result.error === 'not_editable') {
-          toast.error('Only drafts can be edited. Move it back to draft first.')
-        } else if (result.error === 'not_found') {
+        if (result.error === 'not_found') {
           toast.error('That invoice no longer exists.')
         } else if (result.error === 'number_taken') {
           toast.error('That invoice number is already used. Raise the company’s next number.')
