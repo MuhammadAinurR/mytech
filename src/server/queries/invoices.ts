@@ -8,7 +8,8 @@ import { err, ok, type Result } from '@/lib/result'
 
 import { db, type Tx } from '../db'
 import { isUniqueViolation } from '../db/errors'
-import { clients, companies, invoiceItems, invoices } from '../db/schema'
+import { clients, companies, invoiceAttachments, invoiceItems, invoices } from '../db/schema'
+import { removeStoredFiles } from './invoice-attachments'
 
 /**
  * Data access for invoices, scoped by owner. Numbers come from the issuing
@@ -359,12 +360,15 @@ export async function setInvoiceStatus(
   })
 }
 
-/** Drafts only: sent and paid invoices are part of the record. */
+/**
+ * Drafts only: sent and paid invoices are part of the record. The cascade
+ * removes attachment rows; their stored files are deleted after the commit.
+ */
 export async function deleteInvoice(
   userId: string,
   id: string,
 ): Promise<Result<undefined, 'not_found' | 'not_editable'>> {
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [current] = await tx
       .select({ status: invoices.status })
       .from(invoices)
@@ -372,9 +376,16 @@ export async function deleteInvoice(
       .for('update')
     if (!current) return err('not_found')
     if (current.status !== 'draft') return err('not_editable')
+    const files = await tx
+      .select({ objectKey: invoiceAttachments.objectKey })
+      .from(invoiceAttachments)
+      .where(eq(invoiceAttachments.invoiceId, id))
     await tx.delete(invoices).where(eq(invoices.id, id))
-    return ok()
+    return ok(files.map((file) => file.objectKey))
   })
+  if (!result.ok) return result
+  await removeStoredFiles(result.data)
+  return ok()
 }
 
 export type ReceivablesSummary = {

@@ -7,6 +7,10 @@ import { err, type Result } from '@/lib/result'
 import { fieldErrors, uuidSchema } from '@/lib/validation'
 import { requireUser } from '@/server/auth/session'
 import {
+  deleteInvoiceAttachment,
+  moveInvoiceAttachment,
+} from '@/server/queries/invoice-attachments'
+import {
   createInvoice,
   deleteInvoice,
   setInvoiceStatus,
@@ -83,6 +87,40 @@ export async function setInvoiceStatusAction(
 
   const result = await setInvoiceStatus(user.id, invoiceId.data, next.data)
   if (result.ok) refresh(invoiceId.data)
+  return result
+}
+
+const attachmentIdsSchema = z.object({ invoiceId: uuidSchema, attachmentId: uuidSchema })
+
+export async function deleteInvoiceAttachmentAction(
+  invoiceId: unknown,
+  attachmentId: unknown,
+): Promise<Result<undefined, 'not_found'>> {
+  const user = await requireUser()
+  const ids = attachmentIdsSchema.safeParse({ invoiceId, attachmentId })
+  if (!ids.success) return err('not_found')
+  const result = await deleteInvoiceAttachment(user.id, ids.data.invoiceId, ids.data.attachmentId)
+  if (result.ok) revalidatePath(`/invoices/${ids.data.invoiceId}`)
+  return result
+}
+
+export async function moveInvoiceAttachmentAction(
+  invoiceId: unknown,
+  attachmentId: unknown,
+  direction: unknown,
+): Promise<Result<undefined, 'not_found' | 'invalid'>> {
+  const user = await requireUser()
+  const ids = attachmentIdsSchema.safeParse({ invoiceId, attachmentId })
+  if (!ids.success) return err('not_found')
+  const to = z.enum(['up', 'down']).safeParse(direction)
+  if (!to.success) return err('invalid')
+  const result = await moveInvoiceAttachment(
+    user.id,
+    ids.data.invoiceId,
+    ids.data.attachmentId,
+    to.data,
+  )
+  if (result.ok) revalidatePath(`/invoices/${ids.data.invoiceId}`)
   return result
 }
 

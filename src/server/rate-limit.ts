@@ -48,4 +48,6 @@ export const RATE_LIMITS = {
   credentialReveal: { bucket: 'reveal', limit: 30, windowSeconds: 5 * 60 },
   // Per user: a test notification is a manual check, not a messaging channel.
   testPush: { bucket: 'test-push', limit: 5, windowSeconds: 10 * 60 },
+  // Per user: a few invoices' worth of attachments, not a file-hosting service.
+  attachmentUpload: { bucket: 'attachment-upload', limit: 30, windowSeconds: 10 * 60 },
 } as const satisfies Record<string, RateLimitRule>
