@@ -25,6 +25,18 @@ export const envSchema = z
     // Credential encryption: "1:<base64 32 bytes>,2:<…>" and the version for new writes.
     ENCRYPTION_KEYS: z.string().min(1, 'is required'),
     ENCRYPTION_KEY_VERSION: z.coerce.number().int().min(1),
+    // Private object storage (MinIO or another S3-compatible service) for uploaded
+    // files that are too big for Postgres, such as PDFs attached to invoices.
+    S3_ENDPOINT: z.url().refine((value) => /^https?:\/\//.test(value), 'must be an http(s):// URL'),
+    S3_REGION: z.string().min(1).default('us-east-1'),
+    S3_ACCESS_KEY_ID: z.string().min(3, 'is required'),
+    S3_SECRET_ACCESS_KEY: z.string().min(8, 'must be at least 8 characters'),
+    S3_BUCKET: z
+      .string()
+      .regex(
+        /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/,
+        'must be a bucket name: 3–63 lowercase letters, digits, dots, or hyphens',
+      ),
     // Web Push (VAPID). All three or none; without them push is off.
     VAPID_PUBLIC_KEY: optional(
       z.string().regex(/^[A-Za-z0-9_-]{87}$/, 'must be a base64url P-256 public key'),
