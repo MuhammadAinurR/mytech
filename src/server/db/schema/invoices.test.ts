@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 
 import { createTestUser } from '../../testing/factories'
 import { closeDb, db } from '..'
-import { companies, invoiceItems, invoices } from '.'
+import { companies, invoiceAttachments, invoiceItems, invoices } from '.'
 
 afterAll(closeDb)
 
@@ -112,5 +112,69 @@ describe('invoices table', () => {
     expect(await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, row!.id))).toEqual(
       [],
     )
+  })
+})
+
+describe('invoice_attachments table', () => {
+  async function withInvoice() {
+    const { user, company } = await setup()
+    const [row] = await db.insert(invoices).values(invoice(user.id, company.id)).returning()
+    const attachment = (overrides: Partial<typeof invoiceAttachments.$inferInsert> = {}) => {
+      const attachmentId = crypto.randomUUID()
+      return {
+        id: attachmentId,
+        userId: user.id,
+        invoiceId: row!.id,
+        position: 0,
+        fileName: 'aws-invoice-october.pdf',
+        objectKey: `${user.id}/${row!.id}/${attachmentId}.pdf`,
+        sizeBytes: 48_213,
+        pageCount: 2,
+        ...overrides,
+      }
+    }
+    return { invoiceId: row!.id, attachment }
+  }
+
+  it('stores attachments in order and removes them with their invoice', async () => {
+    const { invoiceId, attachment } = await withInvoice()
+    await db
+      .insert(invoiceAttachments)
+      .values([attachment({ position: 1, fileName: 'second.pdf' }), attachment({ position: 0 })])
+    const rows = await db
+      .select()
+      .from(invoiceAttachments)
+      .where(eq(invoiceAttachments.invoiceId, invoiceId))
+      .orderBy(invoiceAttachments.position)
+    expect(rows.map((r) => r.fileName)).toEqual(['aws-invoice-october.pdf', 'second.pdf'])
+
+    await db.delete(invoices).where(eq(invoices.id, invoiceId))
+    expect(
+      await db.select().from(invoiceAttachments).where(eq(invoiceAttachments.invoiceId, invoiceId)),
+    ).toEqual([])
+  })
+
+  it.each([
+    ['a blank file name', { fileName: '   ' }],
+    ['an empty file', { sizeBytes: 0 }],
+    ['a file over 10 MiB', { sizeBytes: 10 * 1024 * 1024 + 1 }],
+    ['zero pages', { pageCount: 0 }],
+    ['more than 200 pages', { pageCount: 201 }],
+    ['a position outside 0–199', { position: 200 }],
+    ['an object key outside the owner’s folder', { objectKey: '../secrets.pdf' }],
+    ['an object key that is not a PDF', { objectKey: `${crypto.randomUUID()}/x/y.exe` }],
+  ])('rejects %s', async (_label, overrides) => {
+    const { attachment } = await withInvoice()
+    await expect(db.insert(invoiceAttachments).values(attachment(overrides))).rejects.toThrow()
+  })
+
+  it('keeps positions and object keys unique', async () => {
+    const { attachment } = await withInvoice()
+    const first = attachment()
+    await db.insert(invoiceAttachments).values(first)
+    await expect(db.insert(invoiceAttachments).values(attachment())).rejects.toThrow()
+    await expect(
+      db.insert(invoiceAttachments).values(attachment({ position: 1, objectKey: first.objectKey })),
+    ).rejects.toThrow()
   })
 })

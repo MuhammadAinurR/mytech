@@ -163,6 +163,50 @@ export const invoiceItems = pgTable(
   ],
 )
 
+/**
+ * A PDF appended to an invoice, such as a hosting or cloud provider's own
+ * invoice. The bytes live in object storage at `objectKey`
+ * (`<userId>/<invoiceId>/<attachmentId>.pdf`); the PDF download adds their pages
+ * after the invoice, in `position` order. The limits here match
+ * `src/features/invoices/lib/attachments.ts`.
+ */
+export const invoiceAttachments = pgTable(
+  'invoice_attachments',
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    invoiceId: uuid()
+      .notNull()
+      .references(() => invoices.id, { onDelete: 'cascade' }),
+    position: smallint().notNull(),
+    fileName: text().notNull(),
+    objectKey: text().notNull(),
+    sizeBytes: integer().notNull(),
+    pageCount: integer().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('invoice_attachments_invoice_position_key').on(table.invoiceId, table.position),
+    uniqueIndex('invoice_attachments_object_key_key').on(table.objectKey),
+    index('invoice_attachments_user_idx').on(table.userId),
+    // 0–199 leaves room to shift positions past the 0–9 in use while reordering.
+    check('invoice_attachments_position_range', sql`${table.position} between 0 and 199`),
+    check(
+      'invoice_attachments_file_name_length',
+      sql`length(btrim(${table.fileName})) between 1 and 200`,
+    ),
+    check('invoice_attachments_size_range', sql`${table.sizeBytes} between 1 and 10485760`),
+    check('invoice_attachments_page_count_range', sql`${table.pageCount} between 1 and 200`),
+    check(
+      'invoice_attachments_object_key_format',
+      sql`${table.objectKey} ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/[0-9a-f-]{36}\\.pdf$'`,
+    ),
+  ],
+)
+
 export type CompanyRow = typeof companies.$inferSelect
 export type InvoiceRow = typeof invoices.$inferSelect
 export type InvoiceItemRow = typeof invoiceItems.$inferSelect
+export type InvoiceAttachmentRow = typeof invoiceAttachments.$inferSelect
