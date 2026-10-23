@@ -27,8 +27,10 @@ if [ ! -x "$NODE_BIN/node" ]; then
   set -eu
 fi
 export PATH="$NODE_BIN:$PATH"
-# PM2 is installed under the Node the shared daemon runs on, not this one.
-PM2=$(ls "$NVM_DIR"/versions/node/*/bin/pm2 | head -1)
+# Use the PM2 under this Node, where the daemon has run since 2026-10-23;
+# after a Node bump that isn't the daemon's yet, the newest one installed.
+PM2="$NODE_BIN/pm2"
+[ -x "$PM2" ] || PM2=$(ls "$NVM_DIR"/versions/node/*/bin/pm2 | sort -V | tail -1)
 echo "Node $(node -v), PM2 from $PM2"
 
 npm ci --no-audit --no-fund
