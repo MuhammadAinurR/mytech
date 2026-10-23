@@ -64,6 +64,13 @@
       "when": 1791411393083,
       "tag": "0008_push_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792796782646,
+      "tag": "0009_invoice_attachments",
+      "breakpoints": true
     }
   ]
 }
