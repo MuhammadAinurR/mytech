@@ -45,8 +45,8 @@
     "pg": "^8.23.1",
     "pino": "^10.4.0",
     "radix-ui": "^1.7.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-hook-form": "^7.89.0",
     "server-only": "^0.0.1",
     "sonner": "^2.0.8",
@@ -88,5 +88,10 @@
     "*.{json,md,css,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.12"
+    }
   }
 }
