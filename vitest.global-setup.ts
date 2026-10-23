@@ -14,6 +14,9 @@ export default async function setup() {
   if (databaseName(url) !== 'workbench_test') {
     throw new Error('Tests must run against workbench_test')
   }
+  if (process.env.S3_BUCKET !== 'workbench-test') {
+    throw new Error('Tests must use the workbench-test bucket')
+  }
   await recreateDatabase(url)
   await runMigrations(url)
 }

@@ -9,6 +9,10 @@ const valid = {
   APP_URL: 'http://localhost:3100',
   ENCRYPTION_KEYS: `1:${Buffer.alloc(32, 1).toString('base64')}`,
   ENCRYPTION_KEY_VERSION: '1',
+  S3_ENDPOINT: 'http://127.0.0.1:9000',
+  S3_ACCESS_KEY_ID: 'workbench',
+  S3_SECRET_ACCESS_KEY: 'not-a-real-secret',
+  S3_BUCKET: 'workbench-test',
 }
 
 describe('parseEnv', () => {
@@ -29,6 +33,17 @@ describe('parseEnv', () => {
     const env = parseEnv(valid)
     expect(env.DATABASE_URL).toBe(valid.DATABASE_URL)
     expect(env.LOG_LEVEL).toBe('info')
+    expect(env.S3_REGION).toBe('us-east-1')
+  })
+
+  it('validates the object storage settings', () => {
+    expect(() => parseEnv({ ...valid, S3_ENDPOINT: 'ftp://files.example' })).toThrowError(
+      /S3_ENDPOINT/,
+    )
+    expect(() => parseEnv({ ...valid, S3_BUCKET: 'Invoices_PDF' })).toThrowError(/S3_BUCKET/)
+    expect(() => parseEnv({ ...valid, S3_SECRET_ACCESS_KEY: undefined })).toThrowError(
+      /S3_SECRET_ACCESS_KEY/,
+    )
   })
 
   it('names every invalid variable', () => {

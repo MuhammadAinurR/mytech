@@ -18,6 +18,11 @@ env:
   # Throwaway key for CI only (32 bytes of 0x07); never used for real data.
   ENCRYPTION_KEYS: '1:BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc='
   ENCRYPTION_KEY_VERSION: '1'
+  # MinIO started by the "Start MinIO" step, with its default root credentials.
+  S3_ENDPOINT: http://127.0.0.1:9000
+  S3_ACCESS_KEY_ID: minioadmin
+  S3_SECRET_ACCESS_KEY: minioadmin
+  S3_BUCKET: workbench-test
   # Throwaway VAPID pair, same as .env.test.
   VAPID_PUBLIC_KEY: 'BEOss_zzIa1PKClTkpOTvA6Dyr7-omR1T2LVFlGToBvbGnoP9HeaAKoG85PihLC_8cuQ_PxYMnjmv2mH1Yhjctc'
   VAPID_PRIVATE_KEY: 'kjKAn3PiBj5IiqdS23IgN4zm_7eG-X5KDTf1WhFtlwQ'
@@ -50,6 +55,22 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - &start-minio
+        name: Start MinIO
+        # MinIO no longer publishes images; Homebrew, preinstalled on Ubuntu
+        # runners, has the same build we run locally (`brew services run minio`).
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install minio
+          mkdir -p "$RUNNER_TEMP/minio"
+          MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin \
+            nohup minio server "$RUNNER_TEMP/minio" --address 127.0.0.1:9000 > "$RUNNER_TEMP/minio.log" 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:9000/minio/health/live && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/minio.log"
+          exit 1
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
@@ -83,6 +104,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - *start-minio
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
