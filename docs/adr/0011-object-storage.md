@@ -28,6 +28,11 @@ chosen buckets nightly.
 - **Keys sit under the owner:** `<userId>/<invoiceId>/<attachmentId>.pdf`. The
   database row holds the key, and a CHECK on its format keeps a row from
   pointing outside its owner's folder.
+- **The invoice PDF route appends attachments** with `pdf-lib`: our invoice's
+  pages first, then each attachment's, in order. Uploads are checked by their
+  bytes (`%PDF-`, readable, not encrypted, 1–200 pages, 10 MB each, 25 MB per
+  invoice) and single attachments download as files, never inline on the app's
+  origin.
 - **Configuration is required:** `S3_ENDPOINT`, `S3_REGION` (default
   `us-east-1`), `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`.
   Production uses its own bucket and an access key limited to it.
