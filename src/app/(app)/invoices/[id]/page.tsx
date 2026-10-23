@@ -5,6 +5,7 @@ import { CachedView } from '@/components/app-shell/cached-view'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 import { InvoiceActions } from '@/features/invoices/components/invoice-actions'
+import { InvoiceAttachments } from '@/features/invoices/components/invoice-attachments'
 import { InvoiceDocument } from '@/features/invoices/components/invoice-document'
 import {
   InvoiceMobileMenu,
@@ -14,6 +15,7 @@ import { InvoiceStatusDot } from '@/features/invoices/components/invoice-status'
 import { formatDateTime, todayInTimeZone } from '@/lib/dates'
 import { uuidSchema } from '@/lib/validation'
 import { requireUser } from '@/server/auth/session'
+import { listInvoiceAttachments } from '@/server/queries/invoice-attachments'
 import { getInvoice } from '@/server/queries/invoices'
 import type { CurrentUser } from '@/server/queries/users'
 
@@ -38,7 +40,10 @@ export default async function InvoicePage({ params }: PageProps<'/invoices/[id]'
 }
 
 async function renderInvoice(user: CurrentUser, id: string) {
-  const invoice = await getInvoice(user.id, id)
+  const [invoice, attachments] = await Promise.all([
+    getInvoice(user.id, id),
+    listInvoiceAttachments(user.id, id),
+  ])
   if (!invoice) notFound()
   const today = todayInTimeZone(user.timezone)
 
@@ -68,10 +73,23 @@ async function renderInvoice(user: CurrentUser, id: string) {
         }
       />
       <InvoicePrimaryAction id={invoice.id} status={invoice.status} />
-      <div className="border-t border-border bg-background px-0 py-0 sm:px-(--gutter) sm:py-10">
+      {/* Grouped: the attachments are an inset list, so phones get the grouped canvas. */}
+      <div
+        data-grouped
+        className="border-t border-border bg-background px-0 py-0 sm:px-(--gutter) sm:py-10"
+      >
         <InvoiceDocument
           invoice={invoice}
           className="mx-auto max-w-3xl sm:rounded-md sm:border sm:border-border"
+        />
+        <InvoiceAttachments
+          invoiceId={invoice.id}
+          attachments={attachments.map(({ id, fileName, sizeBytes, pageCount }) => ({
+            id,
+            fileName,
+            sizeBytes,
+            pageCount,
+          }))}
         />
       </div>
     </>
