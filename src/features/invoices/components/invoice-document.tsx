@@ -4,6 +4,7 @@ import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { InvoiceDetail } from '@/server/queries/invoices'
 
+import { bankTransfer, TRANSFER_TEXT } from '../lib/payment'
 import { formatPercent, formatQuantity } from '../lib/totals'
 
 /**
@@ -19,6 +20,7 @@ export function InvoiceDocument({
 }) {
   const money = (amountMinor: number) => formatMoney(amountMinor, invoice.currency)
   const { company } = invoice
+  const transfer = bankTransfer(company, invoice.status)
 
   return (
     <article
@@ -146,12 +148,24 @@ export function InvoiceDocument({
         ) : null}
       </div>
 
-      {invoice.notes || company.paymentDetails ? (
+      {invoice.notes || company.paymentDetails || transfer ? (
         <footer className="print-avoid-break mt-12 grid gap-8 border-t border-rule pt-6 text-sm sm:grid-cols-2">
-          {company.paymentDetails ? (
+          {company.paymentDetails || transfer ? (
             <div>
               <p className="text-xs text-ink-subtle">Payment</p>
-              <p className="mt-1 whitespace-pre-line text-ink-muted">{company.paymentDetails}</p>
+              {transfer ? (
+                <p className="mt-1 text-pretty text-ink-muted">
+                  {TRANSFER_TEXT.before(transfer.bankName)}
+                  {/* Never split an account number someone has to copy. */}
+                  <span className="font-mono whitespace-nowrap text-ink">
+                    {transfer.accountNumber}
+                  </span>
+                  {TRANSFER_TEXT.after(transfer.accountName)}
+                </p>
+              ) : null}
+              {company.paymentDetails ? (
+                <p className="mt-1 whitespace-pre-line text-ink-muted">{company.paymentDetails}</p>
+              ) : null}
             </div>
           ) : null}
           {invoice.notes ? (

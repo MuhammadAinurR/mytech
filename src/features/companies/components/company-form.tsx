@@ -9,6 +9,7 @@ import { DialogBody, DialogClose, DialogFooter } from '@/components/ui/dialog'
 import { Field } from '@/components/ui/field'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { toast } from '@/components/ui/toaster'
+import { bankTransfer, TRANSFER_TEXT } from '@/features/invoices/lib/payment'
 import { formatInvoiceNumber } from '@/features/invoices/lib/totals'
 import { applyFieldErrors } from '@/lib/forms'
 import { CURRENCIES } from '@/lib/money'
@@ -38,6 +39,19 @@ export function CompanyForm({
   })
   const preview =
     /^\d{1,9}$/.test(next) && Number(next) >= 1 ? formatInvoiceNumber(prefix, Number(next)) : null
+  const [bankName, bankAccountNumber, bankAccountName] = useWatch({
+    control: form.control,
+    name: ['bankName', 'bankAccountNumber', 'bankAccountName'],
+  })
+  // The sentence unpaid invoices will print, once all three are filled in.
+  const transfer = bankTransfer(
+    {
+      bankName: bankName?.trim() || null,
+      bankAccountNumber: bankAccountNumber?.trim().replace(/\s+/g, ' ') || null,
+      bankAccountName: bankAccountName?.trim() || null,
+    },
+    'sent',
+  )
 
   const onSubmit = form.handleSubmit((values) =>
     startTransition(async () => {
@@ -73,9 +87,48 @@ export function CompanyForm({
             <Input type="email" autoComplete="email" {...form.register('email')} />
           </Field>
         </div>
+        <fieldset className="grid gap-3 rounded-md border border-border p-4 sm:grid-cols-2">
+          <legend className="px-1 text-sm font-medium">Bank account</legend>
+          <p className="-mt-1 text-xs text-muted sm:col-span-2">
+            Optional. Unpaid invoices ask clients to transfer payment to this account.
+          </p>
+          <Field label="Bank" hideOptional error={errors.bankName?.message}>
+            <Input autoComplete="off" placeholder="BNI" {...form.register('bankName')} />
+          </Field>
+          <Field label="Account number" hideOptional error={errors.bankAccountNumber?.message}>
+            <Input
+              className="font-mono"
+              autoComplete="off"
+              spellCheck={false}
+              {...form.register('bankAccountNumber')}
+            />
+          </Field>
+          <Field
+            label="Account holder"
+            hideOptional
+            className="sm:col-span-2"
+            error={errors.bankAccountName?.message}
+          >
+            <Input
+              autoComplete="off"
+              placeholder="As registered with the bank"
+              {...form.register('bankAccountName')}
+            />
+          </Field>
+          {transfer ? (
+            <p className="text-sm text-muted sm:col-span-2" aria-live="polite">
+              Invoices will say:{' '}
+              <span className="text-fg">
+                {TRANSFER_TEXT.before(transfer.bankName)}
+                <span className="font-mono whitespace-nowrap">{transfer.accountNumber}</span>
+                {TRANSFER_TEXT.after(transfer.accountName)}
+              </span>
+            </p>
+          ) : null}
+        </fieldset>
         <Field
           label="Payment details"
-          hint="Printed at the bottom of each invoice: bank account, payment link, terms."
+          hint="Printed at the bottom of each invoice: payment link, terms, other ways to pay."
           error={errors.paymentDetails?.message}
         >
           <Textarea rows={3} {...form.register('paymentDetails')} />
