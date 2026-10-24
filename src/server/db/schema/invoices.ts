@@ -31,8 +31,11 @@ export const companies = pgTable(
     taxId: text(),
     email: text(),
     defaultCurrency: char({ length: 3 }).notNull(),
-    // Printed on invoices: bank account, payment link, terms of payment.
+    // Printed on invoices: payment link, terms, other ways to pay.
     paymentDetails: text(),
+    // Where unpaid invoices ask clients to transfer payment. Both or neither.
+    bankName: text(),
+    bankAccountNumber: text(),
     invoicePrefix: text().notNull().default('INV-'),
     // The number the next invoice from this company will receive.
     nextInvoiceNumber: integer().notNull().default(1),
@@ -54,6 +57,21 @@ export const companies = pgTable(
     check(
       'companies_payment_details_length',
       sql`${table.paymentDetails} is null or length(${table.paymentDetails}) <= 1000`,
+    ),
+    // IS NULL is never NULL itself, so this comparison can't slip through as NULL.
+    check(
+      'companies_bank_complete',
+      sql`(${table.bankName} is null) = (${table.bankAccountNumber} is null)`,
+    ),
+    check(
+      'companies_bank_name_length',
+      sql`${table.bankName} is null or length(btrim(${table.bankName})) between 1 and 100`,
+    ),
+    // 4–40 characters: letters and digits, with single spaces or dashes inside
+    // (local numbers like 123-456-7890, IBANs like DE89 3704 0044 0532 0130 00).
+    check(
+      'companies_bank_account_number_format',
+      sql`${table.bankAccountNumber} is null or (length(${table.bankAccountNumber}) between 4 and 40 and ${table.bankAccountNumber} ~ '^[A-Za-z0-9]+([ -][A-Za-z0-9]+)*$')`,
     ),
     check(
       'companies_invoice_prefix_format',
