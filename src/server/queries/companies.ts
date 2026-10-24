@@ -19,6 +19,9 @@ const columns = {
   email: companies.email,
   defaultCurrency: companies.defaultCurrency,
   paymentDetails: companies.paymentDetails,
+  bankName: companies.bankName,
+  bankAccountNumber: companies.bankAccountNumber,
+  bankAccountName: companies.bankAccountName,
   invoicePrefix: companies.invoicePrefix,
   nextInvoiceNumber: companies.nextInvoiceNumber,
   hasLogo: sql<boolean>`${companies.logo} is not null`,
@@ -33,6 +36,9 @@ export type Company = {
   email: string | null
   defaultCurrency: string
   paymentDetails: string | null
+  bankName: string | null
+  bankAccountNumber: string | null
+  bankAccountName: string | null
   invoicePrefix: string
   nextInvoiceNumber: number
   hasLogo: boolean

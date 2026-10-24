@@ -27,6 +27,9 @@ async function userWithInvoices(
     email: null,
     defaultCurrency: 'USD',
     paymentDetails: null,
+    bankName: null,
+    bankAccountNumber: null,
+    bankAccountName: null,
     invoicePrefix: 'INV-',
     nextInvoiceNumber: 1,
   })

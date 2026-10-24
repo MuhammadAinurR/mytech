@@ -55,6 +55,9 @@ describe('listDueInvoices', () => {
       email: null,
       defaultCurrency: 'USD',
       paymentDetails: null,
+      bankName: null,
+      bankAccountNumber: null,
+      bankAccountName: null,
       invoicePrefix: 'D-',
       nextInvoiceNumber: 1,
     })

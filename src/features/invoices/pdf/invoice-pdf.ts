@@ -19,6 +19,7 @@ import { formatDateOnly } from '@/lib/dates'
 import { formatMoney } from '@/lib/money'
 import type { InvoiceDetail } from '@/server/queries/invoices'
 
+import { bankTransfer, TRANSFER_TEXT } from '../lib/payment'
 import { formatPercent, formatQuantity } from '../lib/totals'
 import { h } from './node-react'
 
@@ -66,6 +67,7 @@ const styles = StyleSheet.create({
   logo: { width: 36, height: 36, objectFit: 'contain', marginBottom: 10 },
   companyName: { fontSize: 12, fontWeight: 600 },
   muted: { color: paper.inkMuted },
+  mono: { fontFamily: 'Geist Mono' },
   subtle: { color: paper.inkSubtle, fontSize: 8 },
   title: {
     fontSize: 20,
@@ -258,17 +260,33 @@ export function invoicePdfDocument(invoice: InvoiceDetail, logo: PdfLogo) {
     ),
   )
 
+  const transfer = bankTransfer(company, invoice.status)
   const footer =
-    company.paymentDetails || invoice.notes
+    transfer || company.paymentDetails || invoice.notes
       ? h(
           View,
           { style: styles.footer, wrap: false },
-          company.paymentDetails
+          transfer || company.paymentDetails
             ? h(
                 View,
                 { style: styles.footerCell },
                 h(Text, { style: styles.label }, 'Payment'),
-                h(Text, { style: styles.muted }, company.paymentDetails),
+                transfer
+                  ? h(
+                      Text,
+                      { style: styles.muted },
+                      TRANSFER_TEXT.before(transfer.bankName),
+                      h(Text, { style: styles.mono }, transfer.accountNumber),
+                      TRANSFER_TEXT.after(transfer.accountName),
+                    )
+                  : null,
+                company.paymentDetails
+                  ? h(
+                      Text,
+                      { style: transfer ? [styles.muted, { marginTop: 4 }] : styles.muted },
+                      company.paymentDetails,
+                    )
+                  : null,
               )
             : null,
           invoice.notes

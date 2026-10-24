@@ -189,7 +189,10 @@ async function main() {
     taxId: '01.234.567.8-901.000',
     email: 'billing@studio.example',
     defaultCurrency: 'USD',
-    paymentDetails: 'Bank Example · 123 456 7890\nSWIFT EXAMIDJA',
+    paymentDetails: 'SWIFT EXAMIDJA. Payment due within 14 days.',
+    bankName: 'Bank Example',
+    bankAccountNumber: '123 456 7890',
+    bankAccountName: 'PT Studio Example',
     invoicePrefix: 'SE-',
     nextInvoiceNumber: 42,
   })
@@ -204,6 +207,9 @@ async function main() {
     email: 'halo@kopikode.example',
     defaultCurrency: 'IDR',
     paymentDetails: null,
+    bankName: null,
+    bankAccountNumber: null,
+    bankAccountName: null,
     invoicePrefix: 'KK/',
     nextInvoiceNumber: 1,
   })
