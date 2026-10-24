@@ -180,35 +180,52 @@ describe('invoice_attachments table', () => {
 })
 
 describe('company bank account', () => {
-  const setBank = async (bankName: string | null, bankAccountNumber: string | null) => {
+  const HOLDER = 'PT Studio Example'
+  const setBank = async (
+    bankName: string | null,
+    bankAccountNumber: string | null,
+    bankAccountName: string | null,
+  ) => {
     const { company } = await setup()
     return db
       .update(companies)
-      .set({ bankName, bankAccountNumber })
+      .set({ bankName, bankAccountNumber, bankAccountName })
       .where(eq(companies.id, company.id))
-      .returning({ bankName: companies.bankName, number: companies.bankAccountNumber })
+      .returning({
+        bank: companies.bankName,
+        number: companies.bankAccountNumber,
+        holder: companies.bankAccountName,
+      })
   }
 
-  it('is optional, and stores a name with its account number', async () => {
+  it('is optional, and stores the bank, account number, and account name together', async () => {
     const { company } = await setup()
-    expect(company).toMatchObject({ bankName: null, bankAccountNumber: null })
-    expect(await setBank('Bank Central Asia', '123-456-7890')).toEqual([
-      { bankName: 'Bank Central Asia', number: '123-456-7890' },
+    expect(company).toMatchObject({
+      bankName: null,
+      bankAccountNumber: null,
+      bankAccountName: null,
+    })
+    expect(await setBank('BNI', '123-456-7890', HOLDER)).toEqual([
+      { bank: 'BNI', number: '123-456-7890', holder: HOLDER },
     ])
-    expect(await setBank('Deutsche Bank', 'DE89 3704 0044 0532 0130 00')).toHaveLength(1)
-    expect(await setBank(null, null)).toEqual([{ bankName: null, number: null }])
+    expect(await setBank('Deutsche Bank', 'DE89 3704 0044 0532 0130 00', HOLDER)).toHaveLength(1)
+    expect(await setBank(null, null, null)).toEqual([{ bank: null, number: null, holder: null }])
   })
 
   it.each([
-    ['a bank without an account number (the NULL case)', 'Bank Central Asia', null],
-    ['an account number without a bank (the NULL case)', null, '1234567890'],
-    ['a blank bank name', '   ', '1234567890'],
-    ['an account number under 4 characters', 'BCA', '123'],
-    ['an account number over 40 characters', 'BCA', '1'.repeat(41)],
-    ['an account number with other symbols', 'BCA', '1234/5678'],
-    ['an account number with a trailing space', 'BCA', '1234 5678 '],
-    ['an account number with doubled separators', 'BCA', '1234  5678'],
-  ])('rejects %s', async (_label, bankName, number) => {
-    await expect(setBank(bankName, number)).rejects.toThrow()
+    ['no account number (a NULL case)', 'BNI', null, HOLDER],
+    ['no bank (a NULL case)', null, '1234567890', HOLDER],
+    ['no account name (a NULL case)', 'BNI', '1234567890', null],
+    ['only an account name (a NULL case)', null, null, HOLDER],
+    ['a blank bank name', '   ', '1234567890', HOLDER],
+    ['a blank account name', 'BNI', '1234567890', '  '],
+    ['an account name over 160 characters', 'BNI', '1234567890', 'a'.repeat(161)],
+    ['an account number under 4 characters', 'BNI', '123', HOLDER],
+    ['an account number over 40 characters', 'BNI', '1'.repeat(41), HOLDER],
+    ['an account number with other symbols', 'BNI', '1234/5678', HOLDER],
+    ['an account number with a trailing space', 'BNI', '1234 5678 ', HOLDER],
+    ['an account number with doubled separators', 'BNI', '1234  5678', HOLDER],
+  ])('rejects %s', async (_label, bankName, number, holder) => {
+    await expect(setBank(bankName, number, holder)).rejects.toThrow()
   })
 })

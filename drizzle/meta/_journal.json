@@ -78,6 +78,13 @@
       "when": 1792801193804,
       "tag": "0010_company_bank_account",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792801365418,
+      "tag": "0011_company_bank_account_name",
+      "breakpoints": true
     }
   ]
 }

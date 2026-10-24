@@ -1,0 +1,4 @@
+ALTER TABLE "companies" DROP CONSTRAINT "companies_bank_complete";--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "bank_account_name" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD CONSTRAINT "companies_bank_account_name_length" CHECK ("companies"."bank_account_name" is null or length(btrim("companies"."bank_account_name")) between 1 and 160);--> statement-breakpoint
+ALTER TABLE "companies" ADD CONSTRAINT "companies_bank_complete" CHECK (("companies"."bank_name" is null) = ("companies"."bank_account_number" is null) and ("companies"."bank_name" is null) = ("companies"."bank_account_name" is null));
