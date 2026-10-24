@@ -33,9 +33,12 @@ export const companies = pgTable(
     defaultCurrency: char({ length: 3 }).notNull(),
     // Printed on invoices: payment link, terms, other ways to pay.
     paymentDetails: text(),
-    // Where unpaid invoices ask clients to transfer payment. Both or neither.
+    // Where unpaid invoices ask clients to transfer payment: the bank (free
+    // text, e.g. "BNI"), the account number, and the name on the account.
+    // All three or none.
     bankName: text(),
     bankAccountNumber: text(),
+    bankAccountName: text(),
     invoicePrefix: text().notNull().default('INV-'),
     // The number the next invoice from this company will receive.
     nextInvoiceNumber: integer().notNull().default(1),
@@ -58,14 +61,18 @@ export const companies = pgTable(
       'companies_payment_details_length',
       sql`${table.paymentDetails} is null or length(${table.paymentDetails}) <= 1000`,
     ),
-    // IS NULL is never NULL itself, so this comparison can't slip through as NULL.
+    // IS NULL is never NULL itself, so these comparisons can't slip through as NULL.
     check(
       'companies_bank_complete',
-      sql`(${table.bankName} is null) = (${table.bankAccountNumber} is null)`,
+      sql`(${table.bankName} is null) = (${table.bankAccountNumber} is null) and (${table.bankName} is null) = (${table.bankAccountName} is null)`,
     ),
     check(
       'companies_bank_name_length',
       sql`${table.bankName} is null or length(btrim(${table.bankName})) between 1 and 100`,
+    ),
+    check(
+      'companies_bank_account_name_length',
+      sql`${table.bankAccountName} is null or length(btrim(${table.bankAccountName})) between 1 and 160`,
     ),
     // 4–40 characters: letters and digits, with single spaces or dashes inside
     // (local numbers like 123-456-7890, IBANs like DE89 3704 0044 0532 0130 00).
