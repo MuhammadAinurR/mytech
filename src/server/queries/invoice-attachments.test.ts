@@ -30,6 +30,9 @@ async function setup() {
     email: null,
     defaultCurrency: 'USD',
     paymentDetails: null,
+    bankName: null,
+    bankAccountNumber: null,
+    bankAccountName: null,
     invoicePrefix: 'ATT-',
     nextInvoiceNumber: 1,
   })

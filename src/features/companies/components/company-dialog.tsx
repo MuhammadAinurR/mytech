@@ -69,6 +69,9 @@ export function CompanyDialogProvider({
               email: company?.email ?? '',
               defaultCurrency: (company?.defaultCurrency ?? defaultCurrency) as 'USD',
               paymentDetails: company?.paymentDetails ?? '',
+              bankName: company?.bankName ?? '',
+              bankAccountNumber: company?.bankAccountNumber ?? '',
+              bankAccountName: company?.bankAccountName ?? '',
               invoicePrefix: company?.invoicePrefix ?? 'INV-',
               nextInvoiceNumber: String(company?.nextInvoiceNumber ?? 1),
             }}

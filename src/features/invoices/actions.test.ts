@@ -26,6 +26,9 @@ async function signedInWithCompany() {
     email: null,
     defaultCurrency: 'USD',
     paymentDetails: null,
+    bankName: null,
+    bankAccountNumber: null,
+    bankAccountName: null,
     invoicePrefix: 'SR-',
     nextInvoiceNumber: 1,
   })

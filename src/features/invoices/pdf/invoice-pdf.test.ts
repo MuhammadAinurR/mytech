@@ -2,13 +2,13 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { GET } from '@/app/api/invoices/[id]/pdf/route'
 import { closeDb } from '@/server/db'
-import { createCompany } from '@/server/queries/companies'
-import { createInvoice } from '@/server/queries/invoices'
+import { createCompany, updateCompany } from '@/server/queries/companies'
+import { createInvoice, getInvoice, setInvoiceStatus } from '@/server/queries/invoices'
 import { closeRedis } from '@/server/redis'
 import { createTestUser, signInAs } from '@/server/testing/factories'
 import { resetRequest } from '@/server/testing/next-request'
 
-import { pdfFilename } from './invoice-pdf'
+import { invoicePdfDocument, pdfFilename, renderInvoicePdf } from './invoice-pdf'
 
 afterAll(async () => {
   await Promise.all([closeDb(), closeRedis()])
@@ -27,6 +27,9 @@ async function setup() {
     email: null,
     defaultCurrency: 'USD',
     paymentDetails: 'Bank Example',
+    bankName: null,
+    bankAccountNumber: null,
+    bankAccountName: null,
     invoicePrefix: 'PDF-',
     nextInvoiceNumber: 7,
   })
@@ -72,6 +75,53 @@ describe('invoice PDF route', () => {
     await signInAs(intruder.id)
     expect((await request(invoiceId)).status).toBe(404)
     expect((await request('not-a-uuid')).status).toBe(404)
+  })
+})
+
+/** All text in a react-pdf element tree (the PDF's own text is compressed). */
+function textOf(node: unknown): string {
+  if (node === null || node === undefined || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(textOf).join('')
+  if (typeof node === 'object' && 'props' in node) {
+    return textOf((node as { props: { children?: unknown } }).props.children)
+  }
+  return ''
+}
+
+describe('bank transfer instruction', () => {
+  it('asks unpaid invoices to be paid into the company’s account, and not paid ones', async () => {
+    const { user, invoiceId } = await setup()
+    const invoice = await getInvoice(user.id, invoiceId)
+    if (!invoice) throw new Error('setup failed')
+    await updateCompany(user.id, invoice.company.id, {
+      name: 'Studio Rofiq',
+      address: 'Jakarta',
+      taxId: null,
+      email: null,
+      defaultCurrency: 'USD',
+      paymentDetails: 'Payment due within 14 days.',
+      bankName: 'BNI',
+      bankAccountNumber: '0123 4567 89',
+      bankAccountName: 'PT Studio Rofiq',
+      invoicePrefix: 'PDF-',
+      nextInvoiceNumber: 8,
+    })
+
+    const unpaid = (await getInvoice(user.id, invoiceId))!
+    const text = textOf(invoicePdfDocument(unpaid, null))
+    expect(text).toContain(
+      'Please transfer payment to BNI, account number 0123 4567 89, in the name of PT Studio Rofiq.',
+    )
+    expect(text).toContain('Payment due within 14 days.')
+    // The nested mono run renders, not just builds.
+    expect((await renderInvoicePdf(unpaid, null)).subarray(0, 5).toString()).toBe('%PDF-')
+
+    await setInvoiceStatus(user.id, invoiceId, 'sent')
+    await setInvoiceStatus(user.id, invoiceId, 'paid')
+    const paid = textOf(invoicePdfDocument((await getInvoice(user.id, invoiceId))!, null))
+    expect(paid).not.toContain('Please transfer payment')
+    expect(paid).toContain('Payment due within 14 days.')
   })
 })
 

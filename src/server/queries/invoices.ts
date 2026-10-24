@@ -105,6 +105,9 @@ export type InvoiceDetail = {
     taxId: string | null
     email: string | null
     paymentDetails: string | null
+    bankName: string | null
+    bankAccountNumber: string | null
+    bankAccountName: string | null
     hasLogo: boolean
     logoUpdatedAt: Date | null
   }
@@ -128,6 +131,9 @@ export async function getInvoice(userId: string, id: string): Promise<InvoiceDet
         taxId: companies.taxId,
         email: companies.email,
         paymentDetails: companies.paymentDetails,
+        bankName: companies.bankName,
+        bankAccountNumber: companies.bankAccountNumber,
+        bankAccountName: companies.bankAccountName,
         hasLogo: sql<boolean>`${companies.logo} is not null`,
         logoUpdatedAt: companies.logoUpdatedAt,
       },

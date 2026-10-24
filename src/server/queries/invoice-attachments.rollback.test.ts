@@ -27,6 +27,9 @@ describe('adding an attachment while storage is down', () => {
       email: null,
       defaultCurrency: 'USD',
       paymentDetails: null,
+      bankName: null,
+      bankAccountNumber: null,
+      bankAccountName: null,
       invoicePrefix: 'RB-',
       nextInvoiceNumber: 1,
     })

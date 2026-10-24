@@ -65,6 +65,53 @@ describe('company actions', () => {
     })
   })
 
+  it('save the bank, account number, and account name together, and name what’s missing', async () => {
+    const user = await createTestUser()
+    await signInAs(user.id)
+    const fieldErrorsOf = async (bank: Record<string, string>) => {
+      const result = await createCompanyAction({ ...form, ...bank })
+      return result.ok ? [] : Object.keys(result.fieldErrors ?? {}).sort()
+    }
+
+    expect(await fieldErrorsOf({ bankName: 'BNI' })).toEqual([
+      'bankAccountName',
+      'bankAccountNumber',
+    ])
+    expect(await fieldErrorsOf({ bankAccountName: 'PT Studio Rofiq' })).toEqual([
+      'bankAccountNumber',
+      'bankName',
+    ])
+    expect(
+      await fieldErrorsOf({
+        bankName: 'BNI',
+        bankAccountNumber: '0123/4567',
+        bankAccountName: 'PT Studio Rofiq',
+      }),
+    ).toEqual(['bankAccountNumber'])
+
+    const created = await createCompanyAction({
+      ...form,
+      bankName: '  BNI ',
+      bankAccountNumber: ' 0123   4567 89 ',
+      bankAccountName: 'PT Studio Rofiq',
+    })
+    if (!created.ok) throw new Error('create failed')
+    expect(await getCompany(user.id, created.data.id)).toMatchObject({
+      bankName: 'BNI',
+      bankAccountNumber: '0123 4567 89',
+      bankAccountName: 'PT Studio Rofiq',
+    })
+
+    // A form from before these fields existed still saves, without a bank account.
+    const older = await createCompanyAction(form)
+    if (!older.ok) throw new Error('create failed')
+    expect(await getCompany(user.id, older.data.id)).toMatchObject({
+      bankName: null,
+      bankAccountNumber: null,
+      bankAccountName: null,
+    })
+  })
+
   it('accept real images only, within the size limit, and serve them to the owner only', async () => {
     const owner = await createTestUser()
     await signInAs(owner.id)
