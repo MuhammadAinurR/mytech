@@ -54,12 +54,12 @@ export const companyFormSchema = z
       .refine((value) => Number(value) >= 1, 'Start at 1 or higher.'),
   })
   .superRefine((value, ctx) => {
-    // Bank, account number, and account name go together, on the invoice and
+    // Bank, account number, and account holder go together, on the invoice and
     // in the database: name each one that's missing once any is filled in.
     const fields = [
       ['bankName', 'bank'],
       ['bankAccountNumber', 'account number'],
-      ['bankAccountName', 'account name'],
+      ['bankAccountName', 'account holder'],
     ] as const
     if (!fields.some(([key]) => value[key])) return
     for (const [key, label] of fields) {
