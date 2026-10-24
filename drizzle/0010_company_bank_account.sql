@@ -1,0 +1,5 @@
+ALTER TABLE "companies" ADD COLUMN "bank_name" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "bank_account_number" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD CONSTRAINT "companies_bank_complete" CHECK (("companies"."bank_name" is null) = ("companies"."bank_account_number" is null));--> statement-breakpoint
+ALTER TABLE "companies" ADD CONSTRAINT "companies_bank_name_length" CHECK ("companies"."bank_name" is null or length(btrim("companies"."bank_name")) between 1 and 100);--> statement-breakpoint
+ALTER TABLE "companies" ADD CONSTRAINT "companies_bank_account_number_format" CHECK ("companies"."bank_account_number" is null or (length("companies"."bank_account_number") between 4 and 40 and "companies"."bank_account_number" ~ '^[A-Za-z0-9]+([ -][A-Za-z0-9]+)*$'));

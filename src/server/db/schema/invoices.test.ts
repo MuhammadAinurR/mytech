@@ -178,3 +178,37 @@ describe('invoice_attachments table', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('company bank account', () => {
+  const setBank = async (bankName: string | null, bankAccountNumber: string | null) => {
+    const { company } = await setup()
+    return db
+      .update(companies)
+      .set({ bankName, bankAccountNumber })
+      .where(eq(companies.id, company.id))
+      .returning({ bankName: companies.bankName, number: companies.bankAccountNumber })
+  }
+
+  it('is optional, and stores a name with its account number', async () => {
+    const { company } = await setup()
+    expect(company).toMatchObject({ bankName: null, bankAccountNumber: null })
+    expect(await setBank('Bank Central Asia', '123-456-7890')).toEqual([
+      { bankName: 'Bank Central Asia', number: '123-456-7890' },
+    ])
+    expect(await setBank('Deutsche Bank', 'DE89 3704 0044 0532 0130 00')).toHaveLength(1)
+    expect(await setBank(null, null)).toEqual([{ bankName: null, number: null }])
+  })
+
+  it.each([
+    ['a bank without an account number (the NULL case)', 'Bank Central Asia', null],
+    ['an account number without a bank (the NULL case)', null, '1234567890'],
+    ['a blank bank name', '   ', '1234567890'],
+    ['an account number under 4 characters', 'BCA', '123'],
+    ['an account number over 40 characters', 'BCA', '1'.repeat(41)],
+    ['an account number with other symbols', 'BCA', '1234/5678'],
+    ['an account number with a trailing space', 'BCA', '1234 5678 '],
+    ['an account number with doubled separators', 'BCA', '1234  5678'],
+  ])('rejects %s', async (_label, bankName, number) => {
+    await expect(setBank(bankName, number)).rejects.toThrow()
+  })
+})
