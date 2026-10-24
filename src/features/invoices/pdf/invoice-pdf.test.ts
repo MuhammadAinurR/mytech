@@ -110,8 +110,9 @@ describe('bank transfer instruction', () => {
 
     const unpaid = (await getInvoice(user.id, invoiceId))!
     const text = textOf(invoicePdfDocument(unpaid, null))
+    // No-break spaces keep the account number on one line.
     expect(text).toContain(
-      'Please transfer payment to BNI, account number 0123 4567 89, in the name of PT Studio Rofiq.',
+      'Please transfer payment to BNI, account number 0123 4567 89, in the name of PT Studio Rofiq.',
     )
     expect(text).toContain('Payment due within 14 days.')
     // The nested mono run renders, not just builds.

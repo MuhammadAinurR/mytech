@@ -276,7 +276,7 @@ export function invoicePdfDocument(invoice: InvoiceDetail, logo: PdfLogo) {
                       Text,
                       { style: styles.muted },
                       TRANSFER_TEXT.before(transfer.bankName),
-                      h(Text, { style: styles.mono }, transfer.accountNumber),
+                      h(Text, { style: styles.mono }, unbreakable(transfer.accountNumber)),
                       TRANSFER_TEXT.after(transfer.accountName),
                     )
                   : null,
@@ -322,6 +322,15 @@ export function invoicePdfDocument(invoice: InvoiceDetail, logo: PdfLogo) {
 
 export function renderInvoicePdf(invoice: InvoiceDetail, logo: PdfLogo): Promise<Buffer> {
   return renderToBuffer(invoicePdfDocument(invoice, logo))
+}
+
+/**
+ * Keeps a grouped account number on one line: react-pdf breaks lines at
+ * spaces (not at the dashes), and a client copying a number split over two
+ * lines can get it wrong. Geist Mono has the no-break space glyph.
+ */
+function unbreakable(accountNumber: string): string {
+  return accountNumber.replaceAll(' ', ' ')
 }
 
 /** A download-safe filename like "SR-0042.pdf". */
