@@ -2,6 +2,7 @@ import 'server-only'
 
 import { and, asc, desc, eq, gte, isNull } from 'drizzle-orm'
 
+import { scheduledEntries, type ScheduledEntry } from '@/features/recurring/lib/forecast'
 import {
   nextOccurrence,
   occurrencesBetween,
@@ -183,6 +184,23 @@ export async function listUpcoming(
       }),
     )
     .sort((a, b) => (a.date === b.date ? a.label.localeCompare(b.label) : a.date < b.date ? -1 : 1))
+}
+
+/**
+ * What the user's active rules will still add to the ledger from `today`
+ * through `until`, soonest first: the forecast on the dashboard. Occurrences
+ * already generated are left to the ledger (see scheduledEntries).
+ */
+export async function listScheduled(
+  userId: string,
+  today: DateOnly,
+  until: DateOnly,
+): Promise<ScheduledEntry[]> {
+  const rules = await db
+    .select({ ...ruleColumns, generatedThrough: recurringRules.generatedThrough })
+    .from(recurringRules)
+    .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isActive, true)))
+  return scheduledEntries(rules, today, until)
 }
 
 export type OpenReminder = {
