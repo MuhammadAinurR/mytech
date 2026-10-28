@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { cashFlow } from './cash-flow'
+import { cashFlow, niceCeiling } from './cash-flow'
+
+describe('niceCeiling', () => {
+  it('rounds up to a clean top tick whose half is clean too', () => {
+    expect(niceCeiling(1_012_270)).toBe(1_200_000) // $10,122.70 → $12K
+    expect(niceCeiling(1_500_000)).toBe(1_500_000) // Rp 1.5M stays
+    expect(niceCeiling(2_100)).toBe(3_000)
+    expect(niceCeiling(9_001)).toBe(10_000)
+    expect(niceCeiling(1)).toBe(1)
+    expect(niceCeiling(0)).toBe(0)
+  })
+})
 
 describe('cashFlow', () => {
   it('pairs the ledger with what is still scheduled, from the current month on', () => {

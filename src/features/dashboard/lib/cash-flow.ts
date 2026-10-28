@@ -51,3 +51,15 @@ export function cashFlow(
   }
   return [...rows.values()].sort((a, b) => (a.month < b.month ? -1 : 1))
 }
+
+// Each step's half is clean too, so a top tick and a middle tick both read
+// well when compacted to one decimal ($12K and $6K, Rp 1.5M and Rp 750K).
+const NICE_STEPS = [1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10]
+
+/** The smallest clean value at or above `value`, for a chart's top tick. Zero stays zero. */
+export function niceCeiling(value: number): number {
+  if (value <= 0) return 0
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  const step = NICE_STEPS.find((candidate) => Math.round(candidate * magnitude) >= value)!
+  return Math.round(step * magnitude)
+}
