@@ -14,6 +14,7 @@ import {
 
 import { id, timestamps } from './columns'
 import { transactionType } from './enums'
+import { invoices } from './invoices'
 import { recurringRules } from './recurring'
 import { users } from './users'
 
@@ -36,6 +37,8 @@ export const transactions = pgTable(
       onDelete: 'set null',
     }),
     occurrenceDate: date({ mode: 'string' }),
+    // Set when this entry records an invoice's payment; the invoice keeps it in sync.
+    invoiceId: uuid().references((): AnyPgColumn => invoices.id, { onDelete: 'cascade' }),
     ...timestamps,
   },
   (table) => [
@@ -56,6 +59,16 @@ export const transactions = pgTable(
     check(
       'transactions_rule_has_occurrence',
       sql`${table.recurringRuleId} is null or ${table.occurrenceDate} is not null`,
+    ),
+    // One payment entry per invoice, ever; also serves the foreign key.
+    uniqueIndex('transactions_invoice_key').on(table.invoiceId),
+    check(
+      'transactions_invoice_is_income',
+      sql`${table.invoiceId} is null or ${table.type} = 'income'`,
+    ),
+    check(
+      'transactions_single_source',
+      sql`${table.invoiceId} is null or ${table.recurringRuleId} is null`,
     ),
   ],
 )

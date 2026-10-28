@@ -85,6 +85,20 @@
       "when": 1792801365418,
       "tag": "0011_company_bank_account_name",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793179648162,
+      "tag": "0012_transaction_invoice_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793179676173,
+      "tag": "0013_invoice_payment_backfill",
+      "breakpoints": true
     }
   ]
 }
