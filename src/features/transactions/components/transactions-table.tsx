@@ -1,6 +1,8 @@
 'use client'
 
-import { Copy, Ellipsis, Pencil, Repeat, Trash2 } from 'lucide-react'
+import { Copy, Ellipsis, FileText, Pencil, Repeat, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Money } from '@/components/money'
@@ -29,6 +31,8 @@ import { formatDateOnly } from '@/lib/dates'
 import type { TransactionItem } from '@/server/queries/transactions'
 
 import { deleteTransactionAction } from '../actions'
+import { failedMessage } from '../lib/failed-message'
+import { EntryDetail, invoiceHref } from './entry-detail'
 import { useTransactionDialog } from './transaction-dialog'
 
 export function TransactionsTable({
@@ -38,6 +42,7 @@ export function TransactionsTable({
   items: TransactionItem[]
   currentYear: string
 }) {
+  const router = useRouter()
   const { openEdit, openDuplicate } = useTransactionDialog()
   const [deleting, setDeleting] = useState<TransactionItem | null>(null)
 
@@ -45,7 +50,14 @@ export function TransactionsTable({
     if (!deleting) return
     const result = await deleteTransactionAction(deleting.id)
     if (result.ok) toast.success('Transaction deleted')
-    else toast.error('That transaction no longer exists.')
+    else toast.error(failedMessage(result.error, 'deleted'))
+  }
+
+  // An invoice's payment is changed through the invoice, so its row opens it.
+  function open(item: TransactionItem) {
+    const href = invoiceHref(item)
+    if (href) router.push(href)
+    else openEdit(item)
   }
 
   return (
@@ -74,7 +86,7 @@ export function TransactionsTable({
                   // menu (rendered in <body>) and from its own buttons.
                   const target = event.target as HTMLElement
                   if (!event.currentTarget.contains(target) || target.closest('button, a')) return
-                  openEdit(item)
+                  open(item)
                 }}
               >
                 <TableCell className="tabular whitespace-nowrap text-muted">
@@ -84,15 +96,26 @@ export function TransactionsTable({
                 </TableCell>
                 <TableCell className="max-w-0 py-2.5">
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <button
-                      type="button"
-                      data-row-link
-                      tabIndex={-1}
-                      onClick={() => openEdit(item)}
-                      className="block min-w-0 cursor-pointer truncate text-left font-medium"
-                    >
-                      {item.category}
-                    </button>
+                    {item.invoiceId ? (
+                      <Link
+                        href={invoiceHref(item)!}
+                        data-row-link
+                        tabIndex={-1}
+                        className="block min-w-0 truncate font-medium"
+                      >
+                        {item.category}
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        data-row-link
+                        tabIndex={-1}
+                        onClick={() => openEdit(item)}
+                        className="block min-w-0 cursor-pointer truncate text-left font-medium"
+                      >
+                        {item.category}
+                      </button>
+                    )}
                     {item.recurringRuleId ? (
                       <Tooltip content="Created by a recurring rule">
                         <Repeat
@@ -102,13 +125,26 @@ export function TransactionsTable({
                         />
                       </Tooltip>
                     ) : null}
+                    {item.invoiceId ? (
+                      <Tooltip content="Recorded when the invoice was marked paid">
+                        <FileText
+                          aria-label="From an invoice"
+                          className="size-3.5 shrink-0 text-subtle"
+                          tabIndex={-1}
+                        />
+                      </Tooltip>
+                    ) : null}
                   </span>
-                  {item.note ? (
-                    <p className="truncate text-xs text-muted lg:hidden">{item.note}</p>
+                  {item.note || item.invoiceNumber ? (
+                    <p className="truncate text-xs text-muted lg:hidden">
+                      <EntryDetail item={item} />
+                    </p>
                   ) : null}
                 </TableCell>
                 <TableCell className="hidden max-w-0 text-muted lg:table-cell">
-                  <span className="block truncate">{item.note}</span>
+                  <span className="block truncate">
+                    <EntryDetail item={item} />
+                  </span>
                 </TableCell>
                 <TableCell numeric className="sm:w-36">
                   <Money
@@ -131,19 +167,30 @@ export function TransactionsTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onSelect={() => openEdit(item)}>
-                          <Pencil />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => openDuplicate(item)}>
-                          <Copy />
-                          Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem tone="danger" onSelect={() => setDeleting(item)}>
-                          <Trash2 />
-                          Delete
-                        </DropdownMenuItem>
+                        {item.invoiceId ? (
+                          <DropdownMenuItem asChild>
+                            <Link href={invoiceHref(item)!}>
+                              <FileText />
+                              Open invoice
+                            </Link>
+                          </DropdownMenuItem>
+                        ) : (
+                          <>
+                            <DropdownMenuItem onSelect={() => openEdit(item)}>
+                              <Pencil />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => openDuplicate(item)}>
+                              <Copy />
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem tone="danger" onSelect={() => setDeleting(item)}>
+                              <Trash2 />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </RowActions>

@@ -14,6 +14,7 @@ import { applyFieldErrors } from '@/lib/forms'
 import { CURRENCIES } from '@/lib/money'
 
 import { createTransactionAction, updateTransactionAction } from '../actions'
+import { failedMessage } from '../lib/failed-message'
 import { transactionFormSchema, type TransactionFormValues } from '../schema'
 
 export function TransactionForm({
@@ -47,11 +48,11 @@ export function TransactionForm({
       if (result.ok) {
         toast.success(transactionId ? 'Transaction updated' : 'Transaction added')
         onDone()
-      } else if (result.error === 'not_found') {
-        toast.error('That transaction no longer exists.')
+      } else if (result.error === 'not_found' || result.error === 'invoice_payment') {
+        toast.error(failedMessage(result.error, 'saved'))
         onDone()
       } else if (!applyFieldErrors(form.setError, result.fieldErrors)) {
-        toast.error('The transaction wasn’t saved. Try again.')
+        toast.error(failedMessage(result.error, 'saved'))
       }
     }),
   )
