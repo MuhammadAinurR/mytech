@@ -90,7 +90,11 @@ const rowClasses =
 
 const pressableClasses = 'select-none [-webkit-touch-callout:none]'
 
-/** A row that navigates (with a chevron). */
+/**
+ * A row that navigates (with a chevron). Drop the chevron with
+ * `chevron={false}` when the row sits among button rows, so trailing figures
+ * stay in one column.
+ */
 export function InsetLinkRow({
   title,
   subtitle,
@@ -99,13 +103,14 @@ export function InsetLinkRow({
   trailing,
   detail,
   tone,
+  chevron = true,
   className,
   ...link
-}: RowContent & Omit<ComponentProps<typeof Link>, 'title' | 'children'>) {
+}: RowContent & { chevron?: boolean } & Omit<ComponentProps<typeof Link>, 'title' | 'children'>) {
   // Forwards the rest (and ref) so a context-menu trigger can wrap it.
   return (
     <Link className={cn(rowClasses, pressableClasses, className)} {...link}>
-      <RowBody {...{ title, subtitle, icon, leading, trailing, detail, tone }} chevron />
+      <RowBody {...{ title, subtitle, icon, leading, trailing, detail, tone, chevron }} />
     </Link>
   )
 }

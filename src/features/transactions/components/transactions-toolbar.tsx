@@ -26,7 +26,7 @@ export function TransactionsToolbar({
       }))}
       search={{
         action: '/transactions',
-        placeholder: 'Search category or note',
+        placeholder: 'Search category, note, invoice',
         label: 'Search transactions',
         value: filters.q,
         keep: { month: filters.month, type: filters.type },

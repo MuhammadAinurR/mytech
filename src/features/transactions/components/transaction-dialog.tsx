@@ -13,6 +13,7 @@ import { toDecimalString } from '@/lib/money'
 import type { TransactionItem } from '@/server/queries/transactions'
 
 import { deleteTransactionAction } from '../actions'
+import { failedMessage } from '../lib/failed-message'
 import { type TransactionFormValues } from '../schema'
 import { TransactionForm } from './transaction-form'
 
@@ -85,7 +86,7 @@ export function TransactionDialogProvider({
     if (!deleting) return
     const result = await deleteTransactionAction(deleting.id)
     if (result.ok) toast.success('Transaction deleted')
-    else toast.error('That transaction no longer exists.')
+    else toast.error(failedMessage(result.error, 'deleted'))
   }
 
   const item = state.item
