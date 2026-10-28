@@ -24,6 +24,8 @@ function refresh(id?: string) {
   if (id) revalidatePath(`/invoices/${id}`)
   revalidatePath('/companies')
   revalidatePath('/dashboard')
+  // A paid invoice's income entry lives in the ledger.
+  revalidatePath('/transactions')
 }
 
 /** A client was saved from an invoice: company pages and editors list it. */

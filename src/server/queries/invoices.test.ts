@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 
 import { type CompanyInput } from '@/features/companies/schema'
 import { type InvoiceFields } from '@/features/invoices/schema'
+import { todayInTimeZone } from '@/lib/dates'
 
 import { closeDb, db } from '../db'
 import { invoiceItems } from '../db/schema'
@@ -19,6 +20,12 @@ import {
   setInvoiceStatus,
   updateInvoice,
 } from './invoices'
+import {
+  deleteTransaction,
+  getMonthlySummary,
+  listTransactions,
+  updateTransaction,
+} from './transactions'
 
 afterAll(closeDb)
 
@@ -426,5 +433,113 @@ describe('saving the client from an invoice', () => {
       }),
     ).toEqual({ ok: false, error: 'not_found' })
     expect(await listClients(owner.user.id, owner.issuer.id)).toEqual([])
+  })
+})
+
+describe('paid invoices as income', () => {
+  const paymentOf = async (userId: string, invoiceId: string) =>
+    (await listTransactions(userId, {})).items.filter((t) => t.invoiceId === invoiceId)
+
+  async function issued(timezone = 'UTC') {
+    const user = await createTestUser({ timezone })
+    const issuer = await createCompany(user.id, company())
+    const created = await createInvoice(user.id, invoice(issuer.id))
+    if (!created.ok) throw new Error('create failed')
+    return { user, issuer, id: created.data.id }
+  }
+
+  it('records one income entry on the day it’s paid, and removes it when unpaid', async () => {
+    const { user, id } = await issued('Asia/Jakarta')
+    await setInvoiceStatus(user.id, id, 'sent')
+    expect(await paymentOf(user.id, id)).toEqual([])
+
+    await setInvoiceStatus(user.id, id, 'paid')
+    const paidOn = todayInTimeZone('Asia/Jakarta', (await getInvoice(user.id, id))!.paidAt!)
+    expect(await paymentOf(user.id, id)).toEqual([
+      expect.objectContaining({
+        type: 'income',
+        amountMinor: 111_000,
+        currency: 'USD',
+        category: 'Invoices',
+        occurredOn: paidOn,
+        recurringRuleId: null,
+        invoiceNumber: 'INV-0001',
+      }),
+    ])
+    // So the dashboard's money in counts it.
+    expect(await getMonthlySummary(user.id, paidOn.slice(0, 7))).toEqual([
+      expect.objectContaining({ currency: 'USD', incomeMinor: 111_000, count: 1 }),
+    ])
+
+    await setInvoiceStatus(user.id, id, 'sent')
+    expect(await paymentOf(user.id, id)).toEqual([])
+    await setInvoiceStatus(user.id, id, 'paid')
+    expect(await paymentOf(user.id, id)).toHaveLength(1)
+  })
+
+  it('follows edits to a paid invoice, and has none while the total is zero', async () => {
+    const { user, issuer, id } = await issued()
+    await setInvoiceStatus(user.id, id, 'paid')
+    const [before] = await paymentOf(user.id, id)
+
+    await updateInvoice(
+      user.id,
+      id,
+      invoice(issuer.id, {
+        currency: 'IDR',
+        taxRateBps: 0,
+        discountMinor: 0,
+        items: [{ description: 'Retainer', quantityMilli: 1000, unitPriceMinor: 5_000_000 }],
+      }),
+    )
+    expect(await paymentOf(user.id, id)).toEqual([
+      expect.objectContaining({
+        id: before!.id,
+        amountMinor: 5_000_000,
+        currency: 'IDR',
+        occurredOn: before!.occurredOn,
+      }),
+    ])
+
+    const free = invoice(issuer.id, {
+      taxRateBps: 0,
+      discountMinor: 0,
+      items: [{ description: 'Goodwill', quantityMilli: 1000, unitPriceMinor: 0 }],
+    })
+    await updateInvoice(user.id, id, free)
+    expect(await paymentOf(user.id, id)).toEqual([])
+    await updateInvoice(user.id, id, invoice(issuer.id))
+    expect(await paymentOf(user.id, id)).toEqual([
+      expect.objectContaining({ amountMinor: 111_000 }),
+    ])
+  })
+
+  it('records a draft marked paid straight away', async () => {
+    const { user, id } = await issued()
+    await setInvoiceStatus(user.id, id, 'paid')
+    expect(await paymentOf(user.id, id)).toHaveLength(1)
+  })
+
+  it('keeps the entry out of reach of transaction edits, and findable by invoice', async () => {
+    const { user, id } = await issued()
+    await setInvoiceStatus(user.id, id, 'paid')
+    const [payment] = await paymentOf(user.id, id)
+
+    const change = {
+      type: 'income' as const,
+      amountMinor: 1,
+      currency: 'USD' as const,
+      category: 'Invoices',
+      occurredOn: '2026-10-01',
+      note: null,
+    }
+    const blocked = { ok: false, error: 'invoice_payment' }
+    expect(await updateTransaction(user.id, payment!.id, change)).toEqual(blocked)
+    expect(await deleteTransaction(user.id, payment!.id)).toEqual(blocked)
+    expect(await paymentOf(user.id, id)).toEqual([payment])
+
+    for (const q of ['inv-0001', 'Northwind']) {
+      expect((await listTransactions(user.id, { q })).items.map((t) => t.id)).toEqual([payment!.id])
+    }
   })
 })

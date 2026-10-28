@@ -94,8 +94,11 @@ describe('transactions isolation', () => {
     expect(await getMonthlySummary(intruder.id, '2026-10')).toEqual([])
     expect(await listCategories(intruder.id)).toEqual([])
 
-    expect(await updateTransaction(intruder.id, mine.id, entry({ amountMinor: 1 }))).toBeNull()
-    expect(await deleteTransaction(intruder.id, mine.id)).toBe(false)
+    const notFound = { ok: false, error: 'not_found' }
+    expect(await updateTransaction(intruder.id, mine.id, entry({ amountMinor: 1 }))).toEqual(
+      notFound,
+    )
+    expect(await deleteTransaction(intruder.id, mine.id)).toEqual(notFound)
     expect(await getTransaction(owner.id, mine.id)).toMatchObject({
       amountMinor: 1000,
       note: 'private',
