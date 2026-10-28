@@ -40,6 +40,14 @@ test('a paid invoice is income in transactions, opens from there, and leaves whe
   await page.getByRole('menuitem', { name: 'Open invoice' }).click()
   await expect(page).toHaveURL(invoiceUrl)
 
+  // The dashboard counts it as money in.
+  await page.goto('/dashboard')
+  const recent = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Recent transactions' }) })
+  await expect(recent.getByRole('listitem').filter({ hasText: number })).toContainText('$1,000.00')
+  await page.goto(invoiceUrl)
+
   await page.getByRole('button', { name: 'More invoice actions' }).click()
   await page.getByRole('menuitem', { name: 'Mark as unpaid' }).click()
   await expect(page.getByText('Marked as sent')).toBeVisible()

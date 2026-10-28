@@ -1,4 +1,3 @@
-import { Bell } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -6,20 +5,22 @@ import { CachedView } from '@/components/app-shell/cached-view'
 import { Money } from '@/components/money'
 import { PageSkeleton } from '@/components/page-skeleton'
 import { StatusDot } from '@/components/ui/status-dot'
-import { DismissReminder } from '@/features/dashboard/components/dismiss-reminder'
+import { CashFlowChart } from '@/features/dashboard/components/cash-flow-chart'
+import { ComingUp } from '@/features/dashboard/components/coming-up'
 import { QuickAdd } from '@/features/dashboard/components/quick-add'
-import { NetChart } from '@/features/dashboard/components/net-chart'
 import { DashboardSection, QuietEmpty } from '@/features/dashboard/components/section'
+import { cashFlow } from '@/features/dashboard/lib/cash-flow'
 import { InvoiceStatusDot } from '@/features/invoices/components/invoice-status'
 import { formatDateRange } from '@/features/projects/lib/board'
-import { describeDaysUntil, diffInDays, formatDateOnly, todayInTimeZone } from '@/lib/dates'
+import { scheduledByMonth } from '@/features/recurring/lib/forecast'
+import { addDays, diffInDays, formatDateOnly, todayInTimeZone } from '@/lib/dates'
 import { formatMoney } from '@/lib/money'
 import { formatMonth, shiftMonth } from '@/lib/months'
 import { cn } from '@/lib/utils'
 import { requireUser } from '@/server/auth/session'
 import { getReceivables, listDueInvoices } from '@/server/queries/invoices'
 import { listOngoingInRange } from '@/server/queries/projects'
-import { listOpenReminders, listUpcoming } from '@/server/queries/recurring'
+import { listOpenReminders, listScheduled } from '@/server/queries/recurring'
 import {
   getMonthlySeries,
   getMonthlySummary,
@@ -29,8 +30,11 @@ import type { CurrentUser } from '@/server/queries/users'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
-const CHART_MONTHS = 6
-const DUE_SOON_DAYS = 14
+/** Months of history in the chart, this one included, and months ahead of it. */
+const CHART_BACK = 6
+const CHART_AHEAD = 6
+/** "Next 12 months" in Coming up, and the forecast's reach. */
+const FORECAST_DAYS = 364
 
 export default async function DashboardPage() {
   const user = await requireUser()
@@ -43,17 +47,17 @@ async function renderDashboard(user: CurrentUser) {
   const today = todayInTimeZone(user.timezone)
   const month = today.slice(0, 7)
   const currency = user.defaultCurrency
-  const months = Array.from({ length: CHART_MONTHS }, (_, i) =>
-    shiftMonth(month, i - CHART_MONTHS + 1),
-  )
+  const back = Array.from({ length: CHART_BACK }, (_, i) => shiftMonth(month, i - CHART_BACK + 1))
+  // This month too: it has history and what is still to come.
+  const ahead = Array.from({ length: CHART_AHEAD + 1 }, (_, i) => shiftMonth(month, i))
 
-  const [summary, series, recent, reminders, upcoming, receivables, dueInvoices, projects] =
+  const [summary, series, recent, reminders, scheduled, receivables, dueInvoices, projects] =
     await Promise.all([
       getMonthlySummary(user.id, month),
-      getMonthlySeries(user.id, currency, months),
+      getMonthlySeries(user.id, currency, back),
       listTransactions(user.id, { pageSize: 5 }),
       listOpenReminders(user.id, today),
-      listUpcoming(user.id, today, DUE_SOON_DAYS),
+      listScheduled(user.id, today, addDays(today, FORECAST_DAYS)),
       getReceivables(user.id, today),
       listDueInvoices(user.id, 5),
       listOngoingInRange(user.id, today, today),
@@ -62,8 +66,8 @@ async function renderDashboard(user: CurrentUser) {
   const primary = summary.find((row) => row.currency === currency)
   const net = primary?.netMinor ?? 0
   const others = summary.filter((row) => row.currency !== currency)
-  const remindedRules = new Set(reminders.map((r) => `${r.ruleId}:${r.occurrenceDate}`))
-  const renewals = upcoming.filter((o) => !remindedRules.has(`${o.ruleId}:${o.date}`)).slice(0, 6)
+  const flow = cashFlow(series, scheduledByMonth(scheduled, currency, ahead), month)
+  const stillDue = flow.find((row) => row.when === 'current')?.scheduledExpenseMinor ?? 0
   const year = today.slice(0, 4)
   const signed = (amount: number, cur: string) =>
     formatMoney(amount, cur, { signDisplay: 'exceptZero' }).replace(/^-/, '−')
@@ -122,6 +126,15 @@ async function renderDashboard(user: CurrentUser) {
                   className="text-fg"
                 />{' '}
                 out
+                {stillDue > 0 ? (
+                  <>
+                    <span className="px-2 text-subtle" aria-hidden>
+                      ·
+                    </span>
+                    <Money amountMinor={stillDue} currency={currency} className="text-fg" /> still
+                    due
+                  </>
+                ) : null}
                 {others.map((row) => (
                   <span key={row.currency}>
                     <span className="px-2 text-subtle" aria-hidden>
@@ -134,7 +147,7 @@ async function renderDashboard(user: CurrentUser) {
             </div>
             <QuickAdd />
             <div className="max-md:rounded-lg max-md:bg-surface max-md:p-4">
-              <NetChart points={series} currency={currency} />
+              <CashFlowChart months={flow} currency={currency} />
             </div>
           </section>
 
@@ -166,7 +179,14 @@ async function renderDashboard(user: CurrentUser) {
                         style: item.occurredOn.startsWith(year) ? 'short' : 'medium',
                       })}
                     </span>
-                    <span className="min-w-0 flex-1 truncate">{item.category}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {item.category}
+                      {item.invoiceNumber ? (
+                        <span className="ml-2 font-mono text-xs text-muted">
+                          {item.invoiceNumber}
+                        </span>
+                      ) : null}
+                    </span>
                     <Money
                       amountMinor={item.type === 'income' ? item.amountMinor : -item.amountMinor}
                       currency={item.currency}
@@ -184,67 +204,16 @@ async function renderDashboard(user: CurrentUser) {
           <DashboardSection
             className="max-md:order-2"
             first
-            title="Due soon"
+            title="Coming up"
             href="/transactions/renewals"
             linkLabel="Renewals"
           >
-            {reminders.length === 0 && renewals.length === 0 ? (
-              <QuietEmpty>Nothing due in the next two weeks.</QuietEmpty>
-            ) : (
-              <ul className="flex flex-col">
-                {reminders.map((reminder) => {
-                  const days = diffInDays(today, reminder.occurrenceDate)
-                  return (
-                    <li
-                      key={reminder.id}
-                      className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0 max-md:min-h-13 max-md:py-2.5 max-md:text-md"
-                    >
-                      <Bell aria-hidden className="size-4 text-warning" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{reminder.label}</p>
-                        <p className="text-xs text-muted">
-                          {formatDateOnly(reminder.occurrenceDate, { style: 'short' })} ·{' '}
-                          {describeDaysUntil(days)}
-                        </p>
-                      </div>
-                      <Money
-                        amountMinor={
-                          reminder.type === 'income' ? reminder.amountMinor : -reminder.amountMinor
-                        }
-                        currency={reminder.currency}
-                        signed
-                        tone={reminder.type === 'income' ? 'positive' : 'neutral'}
-                        className="text-sm"
-                      />
-                      <DismissReminder id={reminder.id} label={reminder.label} />
-                    </li>
-                  )
-                })}
-                {renewals.map((item) => (
-                  <li
-                    key={`${item.ruleId}-${item.date}`}
-                    className="flex items-center gap-3 border-b border-border py-2 text-sm last:border-b-0 max-md:min-h-13 max-md:py-2.5 max-md:text-md"
-                  >
-                    <span aria-hidden className="size-4" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate">{item.label}</p>
-                      <p className="text-xs text-muted">
-                        {formatDateOnly(item.date, { style: 'short' })} ·{' '}
-                        {describeDaysUntil(item.daysUntil)}
-                      </p>
-                    </div>
-                    <Money
-                      amountMinor={item.type === 'income' ? item.amountMinor : -item.amountMinor}
-                      currency={item.currency}
-                      signed
-                      tone={item.type === 'income' ? 'positive' : 'muted'}
-                      className="text-sm"
-                    />
-                    <span aria-hidden className="size-7" />
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ComingUp
+              today={today}
+              currency={currency}
+              reminders={reminders}
+              scheduled={scheduled}
+            />
           </DashboardSection>
 
           <DashboardSection
