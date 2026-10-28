@@ -1,9 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import { type RecurringRuleInput } from '@/features/recurring/schema'
 
 import { closeDb, db } from '../db'
-import { reminders } from '../db/schema'
+import { recurringRules, reminders } from '../db/schema'
 import { createTestUser } from '../testing/factories'
 import {
   createRule,
@@ -12,6 +13,7 @@ import {
   getRule,
   listOpenReminders,
   listRules,
+  listScheduled,
   listUpcoming,
   setRuleActive,
   updateRule,
@@ -71,6 +73,46 @@ describe('recurring rules data access', () => {
       ['VPS', '2026-10-31', 24, false],
       ['VPS', '2026-11-30', 54, false],
     ])
+  })
+})
+
+describe('forecast', () => {
+  it('schedules what active rules will still create, after the worker’s cursor', async () => {
+    const user = await createTestUser()
+    const intruder = await createTestUser()
+    const monthly = { frequency: 'monthly' as const, monthOfYear: null }
+    const vps = await createRule(
+      user.id,
+      rule({ ...monthly, label: 'VPS', dayOfMonth: 5, amountMinor: 250_000, currency: 'IDR' }),
+    )
+    await createRule(user.id, rule())
+    const paused = await createRule(user.id, rule({ ...monthly, label: 'Paused' }))
+    await setRuleActive(user.id, paused.id, false)
+    // The worker has already turned today's VPS bill into a transaction.
+    await db
+      .update(recurringRules)
+      .set({ generatedThrough: '2026-11-05' })
+      .where(eq(recurringRules.id, vps.id))
+
+    const scheduled = await listScheduled(user.id, '2026-11-05', '2027-10-31')
+    expect(scheduled.slice(0, 2)).toEqual([
+      {
+        ruleId: vps.id,
+        label: 'VPS',
+        type: 'expense',
+        amountMinor: 250_000,
+        currency: 'IDR',
+        frequency: 'monthly',
+        date: '2026-12-05',
+      },
+      expect.objectContaining({ label: 'VPS', date: '2027-01-05' }),
+    ])
+    expect(scheduled.filter((entry) => entry.label === 'VPS')).toHaveLength(11)
+    expect(scheduled.filter((entry) => entry.label === 'Domain').map((e) => e.date)).toEqual([
+      '2027-10-20',
+    ])
+    expect(scheduled.some((entry) => entry.label === 'Paused')).toBe(false)
+    expect(await listScheduled(intruder.id, '2026-11-05', '2027-10-31')).toEqual([])
   })
 })
 
