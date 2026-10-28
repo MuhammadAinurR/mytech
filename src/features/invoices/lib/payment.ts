@@ -1,5 +1,11 @@
 import { type InvoiceStatus } from '../schema'
 
+/**
+ * The category of the income entry a paid invoice records. Migration 0013
+ * backfilled older invoices under the same name.
+ */
+export const INVOICE_PAYMENT_CATEGORY = 'Invoices'
+
 export type BankTransfer = { bankName: string; accountNumber: string; accountName: string }
 
 /**

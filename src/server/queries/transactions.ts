@@ -4,9 +4,10 @@ import { and, asc, count, desc, eq, gte, ilike, lt, or, sql, type SQL } from 'dr
 
 import { type TransactionInput, type TransactionType } from '@/features/transactions/schema'
 import { monthRange } from '@/lib/months'
+import { err, ok, type Result } from '@/lib/result'
 
 import { db, type DbOrTx } from '../db'
-import { transactions } from '../db/schema'
+import { invoices, transactions } from '../db/schema'
 
 /**
  * Data access for transactions. Every function takes the owner's id and scopes
@@ -24,7 +25,11 @@ const listColumns = {
   occurredOn: transactions.occurredOn,
   note: transactions.note,
   recurringRuleId: transactions.recurringRuleId,
+  invoiceId: transactions.invoiceId,
 }
+
+/** Reads join the invoice a payment entry belongs to, for its number. */
+const itemColumns = { ...listColumns, invoiceNumber: invoices.numberLabel }
 
 export type TransactionItem = {
   id: string
@@ -36,6 +41,10 @@ export type TransactionItem = {
   note: string | null
   /** Set when the worker created this entry from a recurring rule. */
   recurringRuleId: string | null
+  /** Set when this entry records an invoice's payment; the invoice owns it. */
+  invoiceId: string | null
+  /** That invoice's number, for display. */
+  invoiceNumber: string | null
 }
 
 function escapeLike(value: string) {
@@ -54,7 +63,15 @@ function listFilters(
   if (type) conditions.push(eq(transactions.type, type))
   if (q) {
     const pattern = `%${escapeLike(q)}%`
-    conditions.push(or(ilike(transactions.category, pattern), ilike(transactions.note, pattern)))
+    conditions.push(
+      or(
+        ilike(transactions.category, pattern),
+        ilike(transactions.note, pattern),
+        // A payment entry is found by its invoice's number or client.
+        ilike(invoices.numberLabel, pattern),
+        ilike(invoices.clientName, pattern),
+      ),
+    )
   }
   return and(...conditions)!
 }
@@ -69,21 +86,27 @@ export async function listTransactions(
 
   const [items, [totals]] = await Promise.all([
     db
-      .select(listColumns)
+      .select(itemColumns)
       .from(transactions)
+      .leftJoin(invoices, eq(invoices.id, transactions.invoiceId))
       .where(where)
       .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db.select({ total: count() }).from(transactions).where(where),
+    db
+      .select({ total: count() })
+      .from(transactions)
+      .leftJoin(invoices, eq(invoices.id, transactions.invoiceId))
+      .where(where),
   ])
   return { items, total: totals?.total ?? 0, page, pageSize }
 }
 
 export async function getTransaction(userId: string, id: string): Promise<TransactionItem | null> {
   const [row] = await db
-    .select(listColumns)
+    .select(itemColumns)
     .from(transactions)
+    .leftJoin(invoices, eq(invoices.id, transactions.invoiceId))
     .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
     .limit(1)
   return row ?? null
@@ -98,29 +121,53 @@ export async function createTransaction(
     .insert(transactions)
     .values({ ...input, userId })
     .returning(listColumns)
-  return row!
+  return { ...row!, invoiceNumber: null }
 }
 
-/** Returns null when the transaction doesn't exist or belongs to someone else. */
+type ChangeError = 'not_found' | 'invoice_payment'
+
+/**
+ * An invoice's payment entry follows its invoice, so neither of these touches
+ * one: edit the invoice, or mark it unpaid, instead.
+ */
 export async function updateTransaction(
   userId: string,
   id: string,
   input: TransactionInput,
-): Promise<TransactionItem | null> {
-  const [row] = await db
-    .update(transactions)
-    .set(input)
-    .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
-    .returning(listColumns)
-  return row ?? null
+): Promise<Result<TransactionItem, ChangeError>> {
+  return db.transaction(async (tx) => {
+    const blocked = await lockForChange(tx, userId, id)
+    if (blocked) return err(blocked)
+    const [row] = await tx
+      .update(transactions)
+      .set(input)
+      .where(eq(transactions.id, id))
+      .returning(listColumns)
+    return ok({ ...row!, invoiceNumber: null })
+  })
 }
 
-export async function deleteTransaction(userId: string, id: string): Promise<boolean> {
-  const deleted = await db
-    .delete(transactions)
+export async function deleteTransaction(
+  userId: string,
+  id: string,
+): Promise<Result<undefined, ChangeError>> {
+  return db.transaction(async (tx) => {
+    const blocked = await lockForChange(tx, userId, id)
+    if (blocked) return err(blocked)
+    await tx.delete(transactions).where(eq(transactions.id, id))
+    return ok()
+  })
+}
+
+/** Locks the user's own transaction, or says why it can't be changed. */
+async function lockForChange(tx: DbOrTx, userId: string, id: string): Promise<ChangeError | null> {
+  const [current] = await tx
+    .select({ invoiceId: transactions.invoiceId })
+    .from(transactions)
     .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
-    .returning({ id: transactions.id })
-  return deleted.length > 0
+    .for('update')
+  if (!current) return 'not_found'
+  return current.invoiceId ? 'invoice_payment' : null
 }
 
 export type CurrencySummary = {

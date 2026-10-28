@@ -13,7 +13,8 @@ import {
 
 import { transactionInputSchema } from './schema'
 
-type ActionError = 'invalid' | 'not_found'
+// invoice_payment: the entry records an invoice's payment and follows the invoice.
+type ActionError = 'invalid' | 'not_found' | 'invoice_payment'
 
 function refresh() {
   revalidatePath('/transactions')
@@ -43,7 +44,7 @@ export async function updateTransactionAction(
   if (!parsed.success) return err('invalid', fieldErrors(parsed.error))
 
   const updated = await updateTransaction(user.id, parsedId.data, parsed.data)
-  if (!updated) return err('not_found')
+  if (!updated.ok) return err(updated.error)
   refresh()
   return ok()
 }
@@ -56,7 +57,7 @@ export async function deleteTransactionAction(
   if (!parsedId.success) return err('not_found')
 
   const deleted = await deleteTransaction(user.id, parsedId.data)
-  if (!deleted) return err('not_found')
+  if (!deleted.ok) return err(deleted.error)
   refresh()
   return ok()
 }

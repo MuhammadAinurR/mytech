@@ -2,13 +2,23 @@ import 'server-only'
 
 import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm'
 
+import { INVOICE_PAYMENT_CATEGORY } from '@/features/invoices/lib/payment'
 import { computeTotals, formatInvoiceNumber } from '@/features/invoices/lib/totals'
 import { type InvoiceFields, type InvoiceStatus } from '@/features/invoices/schema'
+import { todayInTimeZone } from '@/lib/dates'
 import { err, ok, type Result } from '@/lib/result'
 
 import { db, type Tx } from '../db'
 import { isUniqueViolation } from '../db/errors'
-import { clients, companies, invoiceAttachments, invoiceItems, invoices } from '../db/schema'
+import {
+  clients,
+  companies,
+  invoiceAttachments,
+  invoiceItems,
+  invoices,
+  transactions,
+  users,
+} from '../db/schema'
 import { removeStoredFiles } from './invoice-attachments'
 
 /**
@@ -326,9 +336,51 @@ export async function updateInvoice(
     const { fields, lineTotals } = priced(input)
     await tx.update(invoices).set(fields).where(eq(invoices.id, id))
     await writeItems(tx, userId, id, input, lineTotals)
+    await syncPayment(tx, id)
     const savedClient = saveClient && (await saveClientFrom(tx, userId, current.companyId, input))
     return ok({ savedClient })
   })
+}
+
+/**
+ * Keeps an invoice's payment entry in step with it, so money in counts paid
+ * invoices: a paid invoice with a positive total has one income transaction
+ * for that total, dated the day it was marked paid in the owner's timezone;
+ * any other invoice has none. An edit moves the amount and currency and keeps
+ * the date. Call it inside the transaction that changed the invoice.
+ */
+async function syncPayment(tx: Tx, invoiceId: string): Promise<void> {
+  const [invoice] = await tx
+    .select({
+      userId: invoices.userId,
+      status: invoices.status,
+      totalMinor: invoices.totalMinor,
+      currency: invoices.currency,
+      paidAt: invoices.paidAt,
+      timezone: users.timezone,
+    })
+    .from(invoices)
+    .innerJoin(users, eq(users.id, invoices.userId))
+    .where(eq(invoices.id, invoiceId))
+  if (!invoice?.paidAt || invoice.status !== 'paid' || invoice.totalMinor <= 0) {
+    await tx.delete(transactions).where(eq(transactions.invoiceId, invoiceId))
+    return
+  }
+  await tx
+    .insert(transactions)
+    .values({
+      userId: invoice.userId,
+      type: 'income',
+      amountMinor: invoice.totalMinor,
+      currency: invoice.currency,
+      category: INVOICE_PAYMENT_CATEGORY,
+      occurredOn: todayInTimeZone(invoice.timezone, invoice.paidAt),
+      invoiceId,
+    })
+    .onConflictDoUpdate({
+      target: transactions.invoiceId,
+      set: { amountMinor: invoice.totalMinor, currency: invoice.currency, updatedAt: new Date() },
+    })
 }
 
 const TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
@@ -362,6 +414,7 @@ export async function setInvoiceStatus(
       .update(invoices)
       .set({ status: next, ...timestamps })
       .where(eq(invoices.id, id))
+    await syncPayment(tx, id)
     return ok()
   })
 }
