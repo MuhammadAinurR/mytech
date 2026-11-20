@@ -7,7 +7,7 @@ Workbench runs on the `ktech` VPS (`ssh ktech`), from a git checkout at
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Web app  | PM2 `mytech-web`, `next start` on `127.0.0.1:3110`                                                                                                                 |
 | Worker   | PM2 `mytech-worker` (recurring entries, reminders, push)                                                                                                           |
-| Node     | The version in `.nvmrc`, installed with nvm. Since 2026-10-23 every app and PM2 7 run on 24.22.1, the default                                                      |
+| Node     | The version in `.nvmrc`, installed with nvm. Since 2026-11-20 every app and PM2 7 run on 26.13.1, the default                                                      |
 | TLS      | nginx site `mytech` ([nginx/mytech.conf](nginx/mytech.conf)) with a Let's Encrypt certificate; certbot renews it                                                   |
 | Postgres | Shared `postgres` container, database `workbench_prod`, owned by role `workbench`; no other role may connect                                                       |
 | Redis    | Shared `redis` container, DB 1 (only this app uses it), keys prefixed `wb:`                                                                                        |
