@@ -1,6 +1,6 @@
 import 'server-only'
 
-import webpush, { WebPushError } from 'web-push'
+import { sendNotification, WebPushError } from 'web-push'
 
 import { env } from '@/env'
 import type { PushMessage } from '@/features/notifications/lib/reminders'
@@ -30,7 +30,7 @@ export type PushOutcome = 'sent' | 'gone' | 'failed'
 export async function sendPush(target: PushTarget, message: PushMessage): Promise<PushOutcome> {
   if (!isPushConfigured()) return 'failed'
   try {
-    await webpush.sendNotification(
+    await sendNotification(
       { endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } },
       JSON.stringify(message),
       {
