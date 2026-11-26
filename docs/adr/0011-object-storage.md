@@ -12,13 +12,13 @@ megabytes each, several per invoice. Company logos are stored in Postgres as
 same way would bloat the database, every `pg_dump`, and every backup restore,
 and make row reads slower.
 
-The production server already runs MinIO, which speaks the S3 API, and backs up
-chosen buckets nightly.
+The production server already runs Silo (`pgsty/silo`), an S3-compatible
+object store, and backs up chosen buckets nightly.
 
 ## Decision
 
 - **Files go to object storage through the S3 API** (`src/server/storage.ts`),
-  with `@aws-sdk/client-s3`. The `minio` JavaScript client was the other
+  with `@aws-sdk/client-s3`. A vendor-specific JavaScript client was the other
   candidate. It pulled in moderate advisories (`query-string`/`decode-uri-component`,
   `stream-json`), and the AWS SDK audits clean. Any S3-compatible service works:
   path-style addressing, and checksums only where the API requires them.
@@ -36,9 +36,9 @@ chosen buckets nightly.
 - **Configuration is required:** `S3_ENDPOINT`, `S3_REGION` (default
   `us-east-1`), `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`.
   Production uses its own bucket and an access key limited to it.
-- **Dev and test use a real MinIO**, as they use a real Postgres and Redis:
-  `brew services run minio` locally, and the same Homebrew build in CI (MinIO
-  no longer publishes container images). Only buckets named `workbench-*` are
+- **Dev and test use a real Silo**, as they use a real Postgres and Redis:
+  `scripts/silo.sh` runs the release production runs, locally and in CI,
+  after checking its published SHA-256. Only buckets named `workbench-*` are
   touched there. Tests refuse to run against anything but `workbench-test`.
   The app creates a missing bucket on first use.
 
@@ -59,5 +59,13 @@ turns an image into a one-page A4 PDF with `sharp` (EXIF orientation applied,
 reduced to 3508 px on the long side, flattened onto white, JPEG at quality 88
 with 4:4:4 chroma) and `pdf-lib` (portrait or landscape to suit the image).
 Storage, keys, the table, and the merge are unchanged: every attachment is
-still a PDF. `sharp` moved from a dev to a runtime dependency. The server's
-object store is now Silo, a MinIO fork with the same S3 API.
+still a PDF. `sharp` moved from a dev to a runtime dependency.
+
+## Amendment (2026-11-26): never MinIO
+
+Silo is a maintained fork of MinIO. MinIO's own community edition stopped
+getting fixes in 2025 and its last builds carry unauthenticated object-write
+advisories (GHSA-hv4r-mvr4-25vw, GHSA-9c4q-hq6p-c237), so no MinIO server,
+image or client is used here, in CI, or on dev machines; the server switched on
+2026-11-20 and this repo on 2026-11-26. Upgrade production (`~/doc/silo.md` on
+the server) and `scripts/silo.sh` together.

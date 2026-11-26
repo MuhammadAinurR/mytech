@@ -25,7 +25,7 @@ export const envSchema = z
     // Credential encryption: "1:<base64 32 bytes>,2:<…>" and the version for new writes.
     ENCRYPTION_KEYS: z.string().min(1, 'is required'),
     ENCRYPTION_KEY_VERSION: z.coerce.number().int().min(1),
-    // Private object storage (MinIO or another S3-compatible service) for uploaded
+    // Private object storage (Silo or another S3-compatible service) for uploaded
     // files that are too big for Postgres, such as PDFs attached to invoices.
     S3_ENDPOINT: z.url().refine((value) => /^https?:\/\//.test(value), 'must be an http(s):// URL'),
     S3_REGION: z.string().min(1).default('us-east-1'),
