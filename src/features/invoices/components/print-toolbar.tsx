@@ -14,7 +14,7 @@ export function PrintToolbar({
 }: {
   backHref: string
   autoPrint: boolean
-  /** Attached PDFs can't be printed from this page; the PDF download has them. */
+  /** Attachments can't be printed from this page; the PDF download has them. */
   attachmentCount?: number
   pdfHref: string
 }) {
