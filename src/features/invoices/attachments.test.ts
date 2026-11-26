@@ -12,6 +12,7 @@ import { closeRedis } from '@/server/redis'
 import { closeStorage } from '@/server/storage'
 import { createTestUser, signInAs } from '@/server/testing/factories'
 import { resetRequest } from '@/server/testing/next-request'
+import { makeImage } from '@/server/testing/images'
 import { makeEncryptedPdf, makePdf, pageSizes } from '@/server/testing/pdfs'
 
 import { deleteInvoiceAttachmentAction, moveInvoiceAttachmentAction } from './actions'
@@ -98,6 +99,21 @@ describe('attaching a PDF', () => {
     ])
   })
 
+  it('stores an image as a one-page PDF named after it', async () => {
+    const { userId, invoiceId } = await setup()
+    const photo = new Blob([new Uint8Array(await makeImage('jpeg', 1200, 1600))])
+    const response = await uploadRequest(invoiceId, photo, { name: 'Nota Toko Server.JPG' })
+    expect(response.status).toBe(201)
+    expect(await listInvoiceAttachments(userId, invoiceId)).toMatchObject([
+      { fileName: 'Nota Toko Server.pdf', pageCount: 1 },
+    ])
+
+    const pdf = await downloadPdf(new Request(`${ORIGIN}/api/invoices/${invoiceId}/pdf`), {
+      params: Promise.resolve({ id: invoiceId }),
+    })
+    expect(await pageSizes(new Uint8Array(await pdf.arrayBuffer()))).toEqual([A4, A4])
+  })
+
   it('refuses anonymous requests, other sites, and other people’s invoices', async () => {
     const { invoiceId } = await setup()
     const file = await pdfBlob()
@@ -118,6 +134,11 @@ describe('attaching a PDF', () => {
     ['no file', async () => null, 'invalid'],
     ['a renamed zip', async () => new Blob(['PK\u0003\u0004 not a pdf']), 'not_pdf'],
     ['a password-protected PDF', async () => blobOf(await makeEncryptedPdf()), 'encrypted'],
+    [
+      'a damaged image',
+      async () => new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3])]),
+      'unreadable',
+    ],
   ])('rejects %s with a reason the page can show', async (_label, makeFile, reason) => {
     const { userId, invoiceId } = await setup()
     const response = await uploadRequest(invoiceId, await makeFile())

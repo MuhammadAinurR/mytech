@@ -1,11 +1,12 @@
 import { revalidatePath } from 'next/cache'
 
 import {
+  attachmentImageType,
   type AttachmentUploadError,
   cleanAttachmentName,
   MAX_ATTACHMENT_BYTES,
 } from '@/features/invoices/lib/attachments'
-import { inspectPdf } from '@/features/invoices/pdf/attachments'
+import { imageToPdf, inspectPdf } from '@/features/invoices/pdf/attachments'
 import { uuidSchema } from '@/lib/validation'
 import { getCurrentUser } from '@/server/auth/session'
 import { addInvoiceAttachment } from '@/server/queries/invoice-attachments'
@@ -19,10 +20,11 @@ const fail = (error: AttachmentUploadError, status: number, headers?: HeadersIni
 const MAX_REQUEST_BYTES = MAX_ATTACHMENT_BYTES + 64 * 1024
 
 /**
- * Attaches one PDF (form field `file`) to the owner's invoice. Everything cheap
- * is checked before the body is read: session, origin, invoice id, declared
- * size, rate limit. The file is then identified by its bytes, never by its
- * name or the browser's type.
+ * Attaches one PDF or image (form field `file`) to the owner's invoice.
+ * Everything cheap is checked before the body is read: session, origin, invoice
+ * id, declared size, rate limit. The file is then identified by its bytes,
+ * never by its name or the browser's type. An image is stored as a one-page
+ * PDF, so the download merges it like any other attachment.
  */
 export async function POST(
   request: Request,
@@ -52,14 +54,24 @@ export async function POST(
   if (!(file instanceof File) || file.size === 0) return fail('invalid', 400)
   if (file.size > MAX_ATTACHMENT_BYTES) return fail('file_too_large', 413)
 
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  const check = await inspectPdf(bytes)
-  if (!check.ok) return fail(check.reason, 400)
+  let bytes: Uint8Array = new Uint8Array(await file.arrayBuffer())
+  let pageCount: number
+  if (attachmentImageType(bytes)) {
+    const converted = await imageToPdf(bytes)
+    if (!converted.ok) return fail(converted.reason, 400)
+    if (converted.bytes.length > MAX_ATTACHMENT_BYTES) return fail('file_too_large', 413)
+    bytes = converted.bytes
+    pageCount = 1
+  } else {
+    const check = await inspectPdf(bytes)
+    if (!check.ok) return fail(check.reason, 400)
+    pageCount = check.pageCount
+  }
 
   const result = await addInvoiceAttachment(user.id, invoiceId.data, {
     fileName: cleanAttachmentName(file.name),
     bytes,
-    pageCount: check.pageCount,
+    pageCount,
   })
   if (!result.ok) {
     const status = { not_found: 404, too_many: 409, too_large: 413 }[result.error]

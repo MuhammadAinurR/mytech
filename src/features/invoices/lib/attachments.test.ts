@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  attachmentImageType,
   attachmentObjectKey,
   cleanAttachmentName,
   contentDisposition,
@@ -23,6 +24,22 @@ describe('looksLikePdf', () => {
   })
 })
 
+describe('attachmentImageType', () => {
+  const of = (...values: number[]) => new Uint8Array(values)
+  it('knows JPEG, PNG and WebP by their bytes', () => {
+    expect(attachmentImageType(of(0xff, 0xd8, 0xff, 0xe0))).toBe('jpeg')
+    expect(attachmentImageType(of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0))).toBe('png')
+    expect(attachmentImageType(bytes('RIFF\u0000\u0000\u0000\u0000WEBPVP8 '))).toBe('webp')
+  })
+
+  it('rejects PDFs, other RIFF files, a cut-off signature, and empty input', () => {
+    expect(attachmentImageType(bytes('%PDF-1.7'))).toBeNull()
+    expect(attachmentImageType(bytes('RIFF\u0000\u0000\u0000\u0000WAVEfmt '))).toBeNull()
+    expect(attachmentImageType(of(0x89, 0x50, 0x4e, 0x47))).toBeNull()
+    expect(attachmentImageType(new Uint8Array())).toBeNull()
+  })
+})
+
 describe('cleanAttachmentName', () => {
   it.each([
     ['AWS Invoice Oct 2026.pdf', 'AWS Invoice Oct 2026.pdf'],
@@ -32,6 +49,10 @@ describe('cleanAttachmentName', () => {
     ['.pdf', 'attachment.pdf'],
     ['', 'attachment.pdf'],
     ['Tagihan Biznet – Oktober.pdf', 'Tagihan Biznet – Oktober.pdf'],
+    ['IMG_2041.JPG', 'IMG_2041.pdf'],
+    ['receipt.jpeg', 'receipt.pdf'],
+    ['Screenshot 2026-11-26.png', 'Screenshot 2026-11-26.pdf'],
+    ['invoice.webp', 'invoice.pdf'],
   ])('%j → %j', (raw, expected) => {
     expect(cleanAttachmentName(raw)).toBe(expected)
   })
