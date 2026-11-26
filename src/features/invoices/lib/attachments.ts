@@ -1,7 +1,9 @@
 /**
- * PDFs attached to an invoice, such as a hosting or cloud provider's own
- * invoice, appended after ours in the downloaded PDF. The per-file limits match
- * the CHECKs on `invoice_attachments`.
+ * Files attached to an invoice, such as a hosting or cloud provider's own
+ * invoice, appended after ours in the downloaded PDF. They are stored as PDFs:
+ * an image (a supplier that only sends a photo or screenshot) becomes a
+ * one-page PDF on upload. The per-file limits match the CHECKs on
+ * `invoice_attachments`.
  */
 export const MAX_ATTACHMENTS = 10
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
@@ -24,9 +26,27 @@ export function looksLikePdf(bytes: Uint8Array): boolean {
   return false
 }
 
+export type AttachmentImageType = 'jpeg' | 'png' | 'webp'
+
+/**
+ * Which image the bytes are, by their signature, or null. Like PDFs, images
+ * are recognised by their bytes, never by their name or the browser's type.
+ */
+export function attachmentImageType(bytes: Uint8Array): AttachmentImageType | null {
+  const startsWith = (signature: number[], offset = 0) =>
+    bytes.length >= offset + signature.length &&
+    signature.every((byte, index) => bytes[offset + index] === byte)
+  if (startsWith([0xff, 0xd8, 0xff])) return 'jpeg'
+  if (startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'png'
+  // "RIFF", a 4-byte size, then "WEBP".
+  if (startsWith([0x52, 0x49, 0x46, 0x46]) && startsWith([0x57, 0x45, 0x42, 0x50], 8)) return 'webp'
+  return null
+}
+
 /**
  * The name to store and show: no folders, control characters, or quotes, at
- * most 200 characters, always ending in `.pdf`.
+ * most 200 characters, always ending in `.pdf` (an image's own extension is
+ * dropped, since it's stored as a PDF).
  */
 export function cleanAttachmentName(raw: string): string {
   const base = raw.split(/[\\/]/).pop() ?? ''
@@ -34,7 +54,7 @@ export function cleanAttachmentName(raw: string): string {
     .replace(/\s+/g, ' ')
     .replace(/[\u0000-\u001f\u007f"]/g, '')
     .trim()
-  const stem = cleaned.replace(/\.pdf$/i, '').trim() || 'attachment'
+  const stem = cleaned.replace(/\.(pdf|jpe?g|png|webp)$/i, '').trim() || 'attachment'
   return `${stem.slice(0, 196)}.pdf`
 }
 
@@ -58,13 +78,13 @@ export const ATTACHMENT_UPLOAD_MESSAGES: Record<AttachmentUploadError, string> =
   forbidden: 'That upload was refused. Reload the page and try again.',
   not_found: 'That invoice no longer exists.',
   rate_limited: 'Too many uploads in a short time. Try again in a few minutes.',
-  invalid: 'Choose a PDF to attach.',
-  not_pdf: 'Only PDF files can be attached.',
+  invalid: 'Choose a PDF or an image to attach.',
+  not_pdf: 'Only PDFs and JPG, PNG or WebP images can be attached.',
   encrypted:
     'This PDF is password-protected. Open it, print it to a new PDF, and attach that instead.',
-  unreadable: 'This PDF couldn’t be read. It may be damaged.',
+  unreadable: 'This file couldn’t be read. It may be damaged.',
   too_many_pages: 'A PDF can have at most 200 pages.',
-  file_too_large: 'A PDF can be at most 10 MB.',
+  file_too_large: 'A file can be at most 10 MB.',
   too_many: 'An invoice can have at most 10 attachments.',
   too_large: 'An invoice’s attachments can be at most 25 MB together.',
 }

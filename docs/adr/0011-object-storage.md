@@ -50,3 +50,14 @@ chosen buckets nightly.
   commits. A file left behind by a crash costs storage, not correctness.
 - Backups must include the bucket. A database restore without it would list
   attachments whose bytes are gone.
+
+## Amendment (2026-11-26): images become PDFs on upload
+
+Some suppliers send only a photo or screenshot of their invoice. Uploads now
+also take JPEG, PNG and WebP, recognised by their bytes like PDFs. The route
+turns an image into a one-page A4 PDF with `sharp` (EXIF orientation applied,
+reduced to 3508 px on the long side, flattened onto white, JPEG at quality 88
+with 4:4:4 chroma) and `pdf-lib` (portrait or landscape to suit the image).
+Storage, keys, the table, and the merge are unchanged: every attachment is
+still a PDF. `sharp` moved from a dev to a runtime dependency. The server's
+object store is now Silo, a MinIO fork with the same S3 API.
