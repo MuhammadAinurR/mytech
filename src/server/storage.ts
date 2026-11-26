@@ -14,7 +14,7 @@ import {
 import { env } from '@/env'
 
 /**
- * Private object storage: MinIO in production, any S3-compatible service
+ * Private object storage: Silo in production, any S3-compatible service
  * elsewhere (ADR 0011). Nothing in the bucket is public. The app reads objects
  * with its own credentials and serves them to their owner, so callers build
  * every key under the owner's id.
@@ -37,7 +37,7 @@ const s3 =
   new S3Client({
     endpoint: env.S3_ENDPOINT,
     region: env.S3_REGION,
-    // MinIO serves buckets as paths (host/bucket/key), not subdomains.
+    // Silo serves buckets as paths (host/bucket/key), not subdomains.
     forcePathStyle: true,
     credentials: {
       accessKeyId: env.S3_ACCESS_KEY_ID,

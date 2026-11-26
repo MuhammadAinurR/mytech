@@ -3,17 +3,17 @@
 Workbench runs on the `ktech` VPS (`ssh ktech`), from a git checkout at
 `~/apps/rofiq/mytech`.
 
-| Piece    | Where                                                                                                                                                              |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Web app  | PM2 `mytech-web`, `next start` on `127.0.0.1:3110`                                                                                                                 |
-| Worker   | PM2 `mytech-worker` (recurring entries, reminders, push)                                                                                                           |
-| Node     | The version in `.nvmrc`, installed with nvm. Since 2026-11-20 every app and PM2 7 run on 26.13.1, the default                                                      |
-| TLS      | nginx site `mytech` ([nginx/mytech.conf](nginx/mytech.conf)) with a Let's Encrypt certificate; certbot renews it                                                   |
-| Postgres | Shared `postgres` container, database `workbench_prod`, owned by role `workbench`; no other role may connect                                                       |
-| Redis    | Shared `redis` container, DB 1 (only this app uses it), keys prefixed `wb:`                                                                                        |
-| Config   | `~/apps/rofiq/mytech/.env.local` (mode 600, not in git). Variables are documented in `.env.example`                                                                |
-| Files    | Shared `minio` container, private bucket `mytech-attachments` (invoice attachments, ADR 0011), reached with key `mytech-app`, whose policy allows only that bucket |
-| Backups  | `workbench_prod` and the `mytech-attachments` bucket are in the server's nightly backup (`~/backup`)                                                               |
+| Piece    | Where                                                                                                                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web app  | PM2 `mytech-web`, `next start` on `127.0.0.1:3110`                                                                                                                                                                  |
+| Worker   | PM2 `mytech-worker` (recurring entries, reminders, push)                                                                                                                                                            |
+| Node     | The version in `.nvmrc`, installed with nvm. Since 2026-11-20 every app and PM2 7 run on 26.13.1, the default                                                                                                       |
+| TLS      | nginx site `mytech` ([nginx/mytech.conf](nginx/mytech.conf)) with a Let's Encrypt certificate; certbot renews it                                                                                                    |
+| Postgres | Shared `postgres` container, database `workbench_prod`, owned by role `workbench`; no other role may connect                                                                                                        |
+| Redis    | Shared `redis` container, DB 1 (only this app uses it), keys prefixed `wb:`                                                                                                                                         |
+| Config   | `~/apps/rofiq/mytech/.env.local` (mode 600, not in git). Variables are documented in `.env.example`                                                                                                                 |
+| Files    | Shared `silo` container (`pgsty/silo`, see `~/doc/silo.md` on the server), private bucket `mytech-attachments` (invoice attachments, ADR 0011), reached with key `mytech-app`, whose policy allows only that bucket |
+| Backups  | `workbench_prod` and the `mytech-attachments` bucket are in the server's nightly backup (`~/backup`)                                                                                                                |
 
 ## Deploying
 
@@ -53,11 +53,11 @@ outside the server, such as a password manager.
 2. Create the role and database (as the container's superuser), then
    `REVOKE ALL ON DATABASE workbench_prod FROM PUBLIC` and grant `CONNECT,
 TEMPORARY` back to `workbench`.
-3. In MinIO (`docker exec minio mc …` with the root credentials), create the
+3. In Silo (`docker exec silo mcli …` with the root credentials), create the
    bucket `mytech-attachments` with no anonymous access, and a user `mytech-app`
    with a policy allowing `s3:GetBucketLocation` and `s3:ListBucket` on the
    bucket and `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on its objects.
-   Add the bucket to `MINIO_BUCKETS` in `~/backup/config.sh`.
+   Add the bucket to `SILO_BUCKETS` in `~/backup/config.sh`.
 4. Write `.env.local` from `.env.example`: the `DATABASE_URL` for that role,
    `REDIS_URL=redis://127.0.0.1:6379/1`, `APP_URL=https://startup.rofiq.id`,
    a new `ENCRYPTION_KEYS` (or the saved one, to read existing credentials),
