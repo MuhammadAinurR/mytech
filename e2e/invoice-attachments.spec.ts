@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 
 import { expect, type Page, test } from '@playwright/test'
 import { PDFDocument } from 'pdf-lib'
+import sharp from 'sharp'
 
 const A4 = [595, 842]
 const LETTER = [612, 792]
@@ -11,6 +12,13 @@ async function pdf(pages: number, size: number[]) {
   const document = await PDFDocument.create()
   for (let i = 0; i < pages; i++) document.addPage([size[0]!, size[1]!])
   return Buffer.from(await document.save())
+}
+
+/** A landscape screenshot, as a supplier might send instead of a PDF. */
+function screenshot() {
+  return sharp({ create: { width: 1600, height: 900, channels: 3, background: '#f4f1ea' } })
+    .png()
+    .toBuffer()
 }
 
 async function pageSizesOf(bytes: Buffer) {
@@ -41,7 +49,7 @@ async function createInvoice(page: Page) {
   return page.url()
 }
 
-test('attach third-party PDFs, order them, and get them after the invoice in the PDF', async ({
+test('attach third-party PDFs and images, order them, and get them after the invoice in the PDF', async ({
   page,
 }) => {
   const invoiceUrl = await createInvoice(page)
@@ -53,7 +61,7 @@ test('attach third-party PDFs, order them, and get them after the invoice in the
     { name: 'aws-october.pdf', mimeType: 'application/pdf', buffer: await pdf(2, LETTER) },
     { name: 'biznet.pdf', mimeType: 'application/pdf', buffer: await pdf(1, RECEIPT) },
   ])
-  await expect(page.getByText('2 PDFs attached')).toBeVisible()
+  await expect(page.getByText('2 files attached')).toBeVisible()
   // Each row's own button (it downloads), not its move and remove buttons.
   const rows = section.locator('[data-row-open]')
   await expect(rows).toHaveText([/aws-october\.pdf\s*2 pages/, /biznet\.pdf\s*1 page/])
@@ -82,7 +90,25 @@ test('attach third-party PDFs, order them, and get them after the invoice in the
     buffer: Buffer.from('PK\u0003\u0004 a zip renamed to .pdf'),
   })
   await expect(page.getByText('not-really.pdf wasn’t attached')).toBeVisible()
-  await expect(page.getByText('Only PDF files can be attached.')).toBeVisible()
+  await expect(
+    page.getByText('Only PDFs and JPG, PNG or WebP images can be attached.'),
+  ).toBeVisible()
+  await expect(rows).toHaveCount(2)
+
+  // A screenshot is attached as a one-page landscape PDF named after it.
+  await section.locator('input[type="file"]').setInputFiles({
+    name: 'Tagihan Biznet.png',
+    mimeType: 'image/png',
+    buffer: await screenshot(),
+  })
+  await expect(page.getByText('Attached Tagihan Biznet.png')).toBeVisible()
+  await expect(rows.last()).toHaveText(/Tagihan Biznet\.pdf\s*1 page/)
+  const image = page.waitForEvent('download')
+  await rows.filter({ hasText: 'Tagihan Biznet.pdf' }).click()
+  expect(await pageSizesOf(readFileSync(await (await image).path()))).toEqual([[842, 595]])
+  await section.getByRole('button', { name: 'Remove Tagihan Biznet.pdf' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Remove' }).click()
+  await expect(page.getByText('Removed Tagihan Biznet.pdf')).toBeVisible()
   await expect(rows).toHaveCount(2)
 
   await section.getByRole('button', { name: 'Remove aws-october.pdf' }).click()

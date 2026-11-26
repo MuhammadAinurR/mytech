@@ -59,8 +59,10 @@ async function uploadOne(invoiceId: string, file: File): Promise<string | null> 
 }
 
 /**
- * Third-party PDFs (a server or cloud provider's invoice) that the PDF download
- * adds after this invoice, in the order shown. Nothing here changes while a
+ * Third-party files (a server or cloud provider's invoice, as a PDF or, when
+ * that's all the supplier sends, a photo or screenshot) that the PDF download
+ * adds after this invoice, in the order shown. Images are stored as one-page
+ * PDFs, so every row is a PDF. Nothing here changes while a
  * change is in flight, so server data never overwrites one.
  */
 export function InvoiceAttachments({
@@ -92,7 +94,7 @@ export function InvoiceAttachments({
     toast.success(
       attached === 1 && files.length === 1
         ? `Attached ${files[0]!.name}`
-        : `${attached} PDFs attached`,
+        : `${attached} files attached`,
     )
     router.refresh()
   }
@@ -112,7 +114,7 @@ export function InvoiceAttachments({
             Attachments
           </h2>
           <p className="text-sm text-pretty text-muted">
-            Third-party PDFs added after the invoice in the PDF download, in this order.
+            Third-party PDFs or images added after the invoice in the PDF download, in this order.
           </p>
         </div>
         <Button
@@ -122,23 +124,23 @@ export function InvoiceAttachments({
           onClick={() => input.current?.click()}
         >
           <Upload />
-          Add PDF
+          Add file
         </Button>
       </div>
 
       {attachments.length === 0 ? (
         <p className="px-4 text-sm text-muted sm:px-0">
-          Nothing attached. Add a supplier’s PDF, such as a server or cloud invoice, to send it
-          after this one.
+          Nothing attached. Add a supplier’s PDF, such as a server or cloud invoice, or a photo or
+          screenshot of it, to send it after this one.
         </p>
       ) : (
         <InsetSection
           className="px-4 md:px-0"
           footer={
             <>
-              {attachments.length} of {MAX_ATTACHMENTS} · {formatFileSize(total)} of{' '}
-              {formatFileSize(MAX_TOTAL_ATTACHMENT_BYTES)}. PDF only, up to{' '}
-              {formatFileSize(MAX_ATTACHMENT_BYTES)} each.
+              {attachments.length} of {MAX_ATTACHMENTS} · <Size bytes={total} /> of{' '}
+              <Size bytes={MAX_TOTAL_ATTACHMENT_BYTES} />. PDF, JPG, PNG or WebP, up to{' '}
+              <Size bytes={MAX_ATTACHMENT_BYTES} /> each; images become one-page PDFs.
             </>
           }
         >
@@ -228,7 +230,7 @@ export function InvoiceAttachments({
       <input
         ref={input}
         type="file"
-        accept="application/pdf,.pdf"
+        accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
         multiple
         className="sr-only"
         tabIndex={-1}
@@ -257,6 +259,11 @@ export function InvoiceAttachments({
       />
     </section>
   )
+}
+
+/** A file size that never breaks between the number and its unit. */
+function Size({ bytes }: { bytes: number }) {
+  return <span className="whitespace-nowrap">{formatFileSize(bytes)}</span>
 }
 
 function RowButton({
